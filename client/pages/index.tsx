@@ -6,6 +6,9 @@ import tinycolor from "tinycolor2";
 import { buildMap, dist, tileTypeToColor } from "./utils";
 import { useEffect, useRef, useState } from "react";
 
+import { EthConnection } from "afterimage-network";
+import { getEthConnection } from "../lib/blockchain";
+
 // NOTE: should this be defined on miner speed?
 const LIGHT_RADIUS = 10;
 
@@ -16,10 +19,25 @@ const Home: NextPage = () => {
     y: 25,
   });
 
+  const [ethConnection, setEthConnection] = useState<
+    EthConnection | undefined
+  >();
+
+  // NOTE: eventually initialize based on seed, etc.
   const tiles = buildMap();
 
-  // NOTE: eventually initialized on game start
-  // const curMove = useRef("");
+  useEffect(() => {
+    getEthConnection()
+      .then(async (ethConnection) => {
+        // NOTE: this is set based on lakshman's local hardhat node
+        ethConnection.setAccount(privateKey);
+        setEthConnection(ethConnection);
+        console.log("eth connection :", ethConnection);
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  }, []);
 
   useEffect(() => {
     document.addEventListener("keydown", handleKeyDown);

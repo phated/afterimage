@@ -4,8 +4,6 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
 include "../node_modules/circomlib/circuits/gates.circom";
 include "../node_modules/circomlib/circuits/mimcsponge.circom";
-// include "merkle.circom";
-// include "https://github.com/0xPARC/circom-secp256k1/blob/master/circuits/bigint.circom";
 
 template InclusionChecker(blockCount, key) {
     signal input possibleHashes[blockCount];

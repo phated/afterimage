@@ -11,6 +11,7 @@ struct GameStorage {
     // Admin controls
     bool paused;
     // Game world state
+    // saltUpperBound might move to the PlayerState in the future
     uint256 saltUpperBound;
     uint256 gridUpperBound;
     mapping(address => PlayerState) playerStates;

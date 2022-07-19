@@ -4,12 +4,10 @@ pragma solidity ^0.8.0;
 import {WithStorage} from "../library/LibStorage.sol";
 import {LibMIMC} from "../library/LibMIMC.sol";
 import {Verifier as CommiterVerifier} from "../library/CommiterVerifier.sol";
-import "hardhat/console.sol";
 
 contract CoreFacet is WithStorage {
     constructor() {}
 
-    function action() public {}
 
     modifier notPaused() {
         require(!gs().paused, "Game is paused");

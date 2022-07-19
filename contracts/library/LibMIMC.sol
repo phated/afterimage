@@ -267,12 +267,8 @@ library LibMIMC {
         FeistelState memory state = FeistelState(0, 0);
         for (uint256 i = 0;i < inputs.length;i++) {
             state = inject(state, (inputs[i] % p));
-            // console.log('stateL injected', state.l);
-            // console.log('stateR injected', state.r);
             state = mix(state, rounds, key, roundConstants);
         }
-        // console.log('stateL', state.l);
-        // console.log('stateR', state.r);
 
         uint256[] memory outputs = new uint256[](outputCount);
         outputs[0] = state.l;

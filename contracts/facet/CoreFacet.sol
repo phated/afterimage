@@ -8,7 +8,6 @@ import {Verifier as CommiterVerifier} from "../library/CommiterVerifier.sol";
 contract CoreFacet is WithStorage {
     constructor() {}
 
-
     modifier notPaused() {
         require(!gs().paused, "Game is paused");
         _;
@@ -31,7 +30,7 @@ contract CoreFacet is WithStorage {
 
         require(_input[0] == possibleHashesHash, "Block number commitment hash mismatch");
         require(_input[1] == gs().saltUpperBound, "Salt upper bound mismatch");
-        require(_input[2] == gs().gridUpperBound, "Grid upper bound mismatch");
+        require(_input[2] == gameConstants().GRID_UPPER_BOUND, "Grid upper bound mismatch");
         require(CommiterVerifier.verifyProof(_a, _b, _c, _input), "Bad proof");
 
         gs().playerStates[msg.sender].commitment = _input[3];

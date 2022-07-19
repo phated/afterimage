@@ -13,13 +13,13 @@ struct GameStorage {
     // Game world state
     // saltUpperBound might move to the PlayerState in the future
     uint256 saltUpperBound;
-    uint256 gridUpperBound;
     mapping(address => PlayerState) playerStates;
 }
 
 // Game config
 struct GameConstants {
     bool START_PAUSED;
+    uint256 GRID_UPPER_BOUND;
 }
 
 struct WhitelistStorage {

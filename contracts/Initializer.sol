@@ -18,6 +18,8 @@ import {WithStorage} from "./library/LibStorage.sol";
 
 struct InitArgs {
     bool START_PAUSED;
+    uint256 GRID_UPPER_BOUND;
+    uint256 SALT_UPPER_BOUND;
 }
 
 // It is expected that this contract is customized in order to deploy a diamond with data
@@ -29,7 +31,9 @@ contract Initializer is WithStorage {
     function init(InitArgs memory initArgs) external {
         gs().diamondAddress = address(this);
         gs().paused = initArgs.START_PAUSED;
+        gs().saltUpperBound = initArgs.SALT_UPPER_BOUND;
 
         gameConstants().START_PAUSED = initArgs.START_PAUSED;
+        gameConstants().GRID_UPPER_BOUND = initArgs.GRID_UPPER_BOUND;
     }
 }

@@ -22,7 +22,7 @@ import Table from "cli-table3";
 import { constants, Contract, utils } from "ethers";
 import fetch from "node-fetch";
 import * as readline from "readline";
-import BaseDiamondABI from "@zkgame/contracts/Diamond.json";
+//@ts-ignore because it might not exist before compile
 import type { IDiamondWritable } from "@zkgame/typechain/@solidstate/contracts/proxy/diamond/writable/IDiamondWritable";
 
 export const enum FacetCutAction {
@@ -359,6 +359,8 @@ export class DiamondChanges {
   }
 
   private isDiamondSpecSelector(selector: string): boolean {
+    // TODO: Fix in a better way
+    const BaseDiamondABI = require("@zkgame/contracts/Diamond.json");
     const baseDiamondInterface = Contract.getInterface(BaseDiamondABI);
 
     const baseDiamondSignatures = this.getSignatures({

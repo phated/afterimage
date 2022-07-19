@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+struct PlayerState {
+    uint256 commitment;
+}
+
 struct GameStorage {
     // Contract housekeeping
     address diamondAddress;
     // Admin controls
     bool paused;
     // Game world state
+    uint256 saltUpperBound;
+    uint256 gridUpperBound;
+    mapping(address => PlayerState) playerStates;
 }
 
 // Game config

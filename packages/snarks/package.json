@@ -1,0 +1,10 @@
+{
+  "name": "@zkgame/snarks",
+  "version": "0.0.0",
+  "files": [
+    "*.r1cs",
+    "*.vkey.json",
+    "*.wasm",
+    "*.zkey"
+  ]
+}

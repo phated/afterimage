@@ -1,0 +1,15 @@
+# This `deployments.toml` file lists different deployment targets
+# via a top-level name (like `[zkgame]`) that provides the Diamond & Initializer
+# and all Facets are listed under the facets key (like `[zkgame.facets]`)
+
+[zkgame]
+diamond = "Diamond"
+initializer = "Initializer"
+
+[[zkgame.facets]]
+name = "CoreFacet"
+selectors = "*"
+
+[[zkgame.facets]]
+name = "WhitelistFacet"
+selectors = "*"

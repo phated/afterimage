@@ -1,0 +1,12 @@
+{
+  "name": "@zkgame/contracts",
+  "version": "0.0.0",
+  "files": [
+    "index.ts",
+    "index.d.ts",
+    "index.d.ts.map",
+    "index.js",
+    "index.js.map",
+    "*.json"
+  ]
+}

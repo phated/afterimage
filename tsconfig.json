@@ -1,0 +1,10 @@
+{
+  "extends": "@projectsophon/tsconfig",
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true, // TODO: Consider upstreaming into @projectsophon/tsconfig
+  },
+  "include": [
+    "./hardhat.config.ts",
+    "./packages/typechain/hardhat.d.ts"
+  ]
+}

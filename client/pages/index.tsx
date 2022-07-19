@@ -12,7 +12,7 @@ const Home: NextPage = () => {
   const tiles = buildMap();
 
   // NOTE: eventually initialized on game start
-  const curPosition = { x: 50, y: 50 };
+  const curPosition = { x: 25, y: 25 };
 
   return (
     <>
@@ -38,14 +38,12 @@ const Home: NextPage = () => {
                         );
 
                         let color = baseColor.clone();
-                        if (dist(curPosition, { x: i, y: j }) > LIGHT_RADIUS) {
+
+                        if (
+                          curPosition.x !== tile.x ||
+                          curPosition.y !== tile.y
+                        ) {
                           color = baseColor.desaturate(100);
-                        } else {
-                          // TODO: simulate flicker/blocks falling behind
-                          const r = Math.random();
-                          if (r < 0.1) {
-                            color = baseColor.desaturate(r * 400);
-                          }
                         }
 
                         return (

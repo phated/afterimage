@@ -1,2 +1,4 @@
 [initializers]
 START_PAUSED = true
+GRID_UPPER_BOUND = 10
+SALT_UPPER_BOUND = 10

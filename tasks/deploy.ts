@@ -32,48 +32,23 @@ async function deploy(args: {}, hre: HardhatRuntimeEnvironment) {
     );
   }
 
-  const changes = new DiamondChanges();
-
   for (const { diamond, initializer, facets } of Object.values(
     hre.settings.deployments
   )) {
-    const diamondContract = await deployContract(diamond, hre);
-
-    const initializerContract = await deployContract(initializer, hre);
-
-    // The `cuts` to perform for ZKGame facets
-    const cuts = [];
-    // TODO: Use `selectors` somehow
-    for (const { name } of facets) {
-      const facetContract = await deployContract(name, hre);
-      cuts.push(...changes.getFacetCuts(name, facetContract));
-    }
-
-    const diamondCut = await hre.ethers.getContractAt(
-      "ZKGame",
-      diamondContract.address
+    const { diamondContract, initializerContract, initTx } = await deployAll(
+      {
+        diamond,
+        initializer,
+        facets,
+      },
+      hre
     );
 
-    // EIP-2535 specifies that the `diamondCut` function takes two optional
-    // arguments: address _init and bytes calldata _calldata
-    // These arguments are used to execute an arbitrary function using delegatecall
-    // in order to set state variables in the diamond during deployment or an upgrade
-    // More info here: https://eips.ethereum.org/EIPS/eip-2535#diamond-interface
-    const initAddress = initializerContract.address;
-    const initFunctionCall = initializerContract.interface.encodeFunctionData(
-      "init",
-      [hre.settings.zkgame.initializers]
-    );
-
-    const initTx = await diamondCut.diamondCut(
-      cuts,
-      initAddress,
-      initFunctionCall
-    );
     const initReceipt = await initTx.wait();
     if (!initReceipt.status) {
       throw Error(`Diamond cut failed: ${initTx.hash}`);
     }
+
     console.log("Completed diamond cut");
 
     await saveDeploy(
@@ -101,6 +76,61 @@ async function deploy(args: {}, hre: HardhatRuntimeEnvironment) {
   }
 
   console.log("Deployed successfully.");
+}
+
+export async function deployAll(
+  {
+    diamond,
+    initializer,
+    facets,
+  }: {
+    diamond: string;
+    initializer: string;
+    facets: { name: string; selectors: string | string[] }[];
+  },
+  hre: HardhatRuntimeEnvironment
+) {
+  const changes = new DiamondChanges();
+
+  const diamondContract = await deployContract(diamond, hre);
+
+  const initializerContract = await deployContract(initializer, hre);
+
+  // The `cuts` to perform for ZKGame facets
+  const cuts = [];
+  // TODO: Use `selectors` somehow
+  for (const { name } of facets) {
+    const facetContract = await deployContract(name, hre);
+    cuts.push(...changes.getFacetCuts(name, facetContract));
+  }
+
+  const diamondCut = await hre.ethers.getContractAt(
+    "ZKGame",
+    diamondContract.address
+  );
+
+  // EIP-2535 specifies that the `diamondCut` function takes two optional
+  // arguments: address _init and bytes calldata _calldata
+  // These arguments are used to execute an arbitrary function using delegatecall
+  // in order to set state variables in the diamond during deployment or an upgrade
+  // More info here: https://eips.ethereum.org/EIPS/eip-2535#diamond-interface
+  const initAddress = initializerContract.address;
+  const initFunctionCall = initializerContract.interface.encodeFunctionData(
+    "init",
+    [hre.settings.zkgame.initializers]
+  );
+
+  const initTx = await diamondCut.diamondCut(
+    cuts,
+    initAddress,
+    initFunctionCall
+  );
+
+  return {
+    diamondContract,
+    initializerContract,
+    initTx,
+  } as const;
 }
 
 async function deployContract(

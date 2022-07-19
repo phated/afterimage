@@ -4,16 +4,70 @@ import styled from "styled-components";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import tinycolor from "tinycolor2";
 import { buildMap, dist, tileTypeToColor } from "./utils";
+import { useEffect, useRef, useState } from "react";
 
 // NOTE: should this be defined on miner speed?
 const LIGHT_RADIUS = 10;
 
 const Home: NextPage = () => {
+  const [moveQueue, setMoveQueue] = useState<[number, number][]>([]);
+  const [curPosition, setCurPosition] = useState<{ x: number; y: number }>({
+    x: 25,
+    y: 25,
+  });
+
   const tiles = buildMap();
 
   // NOTE: eventually initialized on game start
-  const curPosition = { x: 25, y: 25 };
+  // const curMove = useRef("");
 
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return function cleanup() {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  });
+
+  useEffect(() => {
+    console.log("moveQueue", moveQueue);
+    if (moveQueue.length === 0) return;
+
+    console.log(`cur position: ${curPosition}`);
+
+    // TODO: boundary checking
+    const newPosition = {
+      x: curPosition.x + moveQueue[0][0],
+      y: curPosition.y + moveQueue[0][1],
+    };
+    console.log(`new position: ${newPosition}`);
+    setCurPosition(newPosition);
+
+    // TODO: contract call with proof
+
+    setMoveQueue((x) => x.slice(1));
+    // if (curMove.current === "") {
+    // set ref
+    // do the contract call
+    // change curPosition
+    // }
+  }, [moveQueue]);
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    const eve = event.target as HTMLElement;
+    if (eve.tagName.toLowerCase() !== "body") return;
+    const key = event.key.toLowerCase();
+
+    console.debug("Key event", key);
+    const keyToDirection: any = {
+      w: [0, -1],
+      a: [-1, 0],
+      s: [0, 1],
+      d: [1, 0],
+    };
+
+    if (!(key in keyToDirection)) return;
+    setMoveQueue((x) => [...x, keyToDirection[key]]);
+  };
   return (
     <>
       <Page>

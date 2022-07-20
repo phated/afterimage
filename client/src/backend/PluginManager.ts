@@ -1,5 +1,5 @@
 import { Monomitter, monomitter } from '@darkforest_eth/events';
-import { dangerousHTML, WorldCoords } from '';
+import { dangerousHTML, WorldCoords } from '../utils';
 import GameManager from './GameManager';
 
 /**

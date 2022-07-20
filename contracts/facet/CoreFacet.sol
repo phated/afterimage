@@ -6,11 +6,17 @@ import {LibMIMC} from "../library/LibMIMC.sol";
 import {Verifier as CommiterVerifier} from "../library/CommiterVerifier.sol";
 
 contract CoreFacet is WithStorage {
+    event PlayerUpdated(address, uint256);
+
     constructor() {}
 
     modifier notPaused() {
         require(!gs().paused, "Game is paused");
         _;
+    }
+
+    function GRID_UPPER_BOUND() public view returns (uint256) {
+        return gameConstants().GRID_UPPER_BOUND;
     }
 
     function commitLocation(
@@ -34,5 +40,6 @@ contract CoreFacet is WithStorage {
         require(CommiterVerifier.verifyProof(_a, _b, _c, _input), "Bad proof");
 
         gs().playerStates[msg.sender].commitment = _input[3];
+        emit PlayerUpdated(msg.sender, gs().playerStates[msg.sender].commitment);
     }
 }

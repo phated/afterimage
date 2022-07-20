@@ -1,13 +1,6 @@
-import {
-  CONTRACT_ADDRESS
-} from '@zkgame/contracts';
-import {
-  Transaction,
-  TxIntent,
-} from "@darkforest_eth/types";
-import {
-  address,
-} from '../utils';
+import { CONTRACT_ADDRESS } from '@zkgame/contracts';
+import { Transaction, TxIntent } from '@darkforest_eth/types';
+import { address } from '../utils';
 import type { ZKGame } from '@zkgame/typechain';
 import {
   ContractCaller,
@@ -33,9 +26,7 @@ import {
   UnconfirmedInitPlayer,
   UnconfirmedMovePlayer,
 } from '../_types/ContractAPITypes';
-import {
-  loadCoreContract,
-} from './Blockchain';
+import { loadCoreContract } from './Blockchain';
 
 /**
  * Roughly contains methods that map 1:1 with functions that live in the contract. Responsible for
@@ -87,7 +78,7 @@ export class ContractsAPI extends EventEmitter {
     this.setupEventListeners();
   }
 
-    /**
+  /**
    * We pass this function into {@link TxExecutor} to calculate what gas fee we should use for the
    * given transaction. The result is either a number, measured in gwei, represented as a string, or
    * a string representing that we want to use an auto gas setting.
@@ -131,7 +122,6 @@ export class ContractsAPI extends EventEmitter {
     this.emit(ContractsAPIEvent.TxSubmitted, txDiagnosticInfo);
   }
 
-
   public destroy(): void {
     this.removeEventListeners();
   }
@@ -146,9 +136,9 @@ export class ContractsAPI extends EventEmitter {
     const filter = {
       address: coreContract.address,
       topics: [
-        [
-          coreContract.filters.PlayerUpdated(null, null).topics,
-        ].map((topicsOrUndefined) => (topicsOrUndefined || [])[0]),
+        [coreContract.filters.PlayerUpdated(null, null).topics].map(
+          (topicsOrUndefined) => (topicsOrUndefined || [])[0]
+        ),
       ] as Array<string | Array<string>>,
     };
 

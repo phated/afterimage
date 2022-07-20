@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
-const webpack = require('webpack')
+const webpack = require('webpack');
 
 const createStyledComponentsTransformer = require('typescript-plugin-styled-components').default;
 const styledComponentsTransformer = createStyledComponentsTransformer();
@@ -63,7 +63,7 @@ module.exports = {
             },
           },
         ],
-      }
+      },
     ],
   },
   plugins: [
@@ -81,10 +81,10 @@ module.exports = {
       filename: './index.html',
       template: './index.html',
     }),
-    new CopyPlugin({patterns: [{ from: 'public', to: 'public' }]}),
+    new CopyPlugin({ patterns: [{ from: 'public', to: 'public' }] }),
     new webpack.ProvidePlugin({
       process: 'process/browser',
-    })
+    }),
   ].filter(Boolean),
 
   // When importing a module whose path matches one of the following, just

@@ -3,11 +3,11 @@ import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import type { Opaque } from 'type-fest';
 
 export const tileTypeToColor: { [key: number]: string } = {
-  0: "#ffac17",
-  1: "#ffb83f",
-  2: "#f27100",
-  3: "#ffae5d",
-  4: "#ff9915",
+  0: '#ffac17',
+  1: '#ffb83f',
+  2: '#f27100',
+  3: '#ffae5d',
+  4: '#ff9915',
 };
 
 // NOTE: eventually defined based on player/contract seed, perlin noise (for tile type) etc.
@@ -23,7 +23,6 @@ export function buildMap(width: number = 100, height: number = 100) {
   }
   return rows;
 }
-
 
 export const getRandomActionId = () => {
   const hex = '0123456789abcdef';
@@ -82,7 +81,6 @@ export const DEV_TEST_PRIVATE_KEY = [
   '0x523170AAE57904F24FFE1F61B7E4FF9E9A0CE7557987C2FC034EACB1C267B4AE', //
   '0x67195c963ff445314e667112ab22f4a7404bad7f9746564eb409b9bb8c6aed32', //
 ];
-
 
 export enum TileType {
   UNKNOWN,
@@ -160,20 +158,20 @@ export type PlayerInfo = {
 };
 
 /**
-* This is expected to be a 40-character, lowercase hex string, prefixed with 0x
-* (so 42 characters in total). EthAddress should only ever be instantiated
-* through the `address` function in `serde`.
-*/
+ * This is expected to be a 40-character, lowercase hex string, prefixed with 0x
+ * (so 42 characters in total). EthAddress should only ever be instantiated
+ * through the `address` function in `serde`.
+ */
 export type EthAddress = Opaque<string, 'EthAddress'>;
 
 /**
-* Converts a string to an `EthAddress`: a 0x-prefixed all lowercase hex string
-* of 40 hex characters. An object of the `EthAddress` type should only ever be
-* initialized through this constructor-like method. Throws if the provided
-* string cannot be parsed as an Ethereum address.
-*
-* @param str An address-like `string`
-*/
+ * Converts a string to an `EthAddress`: a 0x-prefixed all lowercase hex string
+ * of 40 hex characters. An object of the `EthAddress` type should only ever be
+ * initialized through this constructor-like method. Throws if the provided
+ * string cannot be parsed as an Ethereum address.
+ *
+ * @param str An address-like `string`
+ */
 export function address(str: string): EthAddress {
   let ret = str.toLowerCase();
   if (ret.slice(0, 2) === '0x') {

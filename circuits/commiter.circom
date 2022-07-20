@@ -84,4 +84,76 @@ template Commiter(bits, blockCount, mimcKey) {
     commiter.outs[0] === commitment;
 }
 
-component main { public [ possibleHashesHash, saltUpperBound, gridUpperBound, commitment ] } = Commiter(200, 32, 123);
+template dist() {
+    signal input old;
+    signal input new;
+
+    // either both are eq, or old-new = 1 or new-old = 1
+    component isOne;
+    component isGood;
+    component iseq[3];
+    iseq[0] = IsEqual();
+    iseq[0].in[0] <== old;
+    iseq[0].in[1] <== new;
+    iseq[1] = IsEqual();
+    iseq[1].in[0] <== old + 1;
+    iseq[1].in[1] <== new;
+    iseq[2] = IsEqual();
+    iseq[2].in[0] <== old;
+    iseq[2].in[1] <== new + 1;
+    isOne = OR();
+    isOne.a <== iseq[1].out;
+    isOne.b <== iseq[2].out;
+    isGood = OR();
+    isGood.a <== isOne.out;
+    isGood.b <== iseq[0].out;
+    isGood.out === 1;
+}
+
+template Move(bits, blockCount, mimcKey) {
+    signal input oldX;
+    signal input oldY;
+    signal input oldBlockhash;
+    signal input oldSalt;
+    signal input oldCommitment;
+
+    signal input newX;
+    signal input newY;
+    signal input newBlockhash;
+    signal input newSalt;
+    signal input newCommitment;
+
+    signal input possibleHashes[blockCount];
+    signal input possibleHashesHash;
+    signal input saltUpperBound;
+    signal input gridUpperBound;
+
+    // check old commitment lines up
+    component oldCommiter = MiMCSponge(4, 220, 1);
+    oldCommiter.k <== mimcKey;
+    oldCommiter.ins[0] <== oldX;
+    oldCommiter.ins[1] <== oldY;
+    oldCommiter.ins[2] <== oldBlockhash;
+    oldCommiter.ins[3] <== oldSalt;
+    oldCommiter.outs[0] === oldCommitment;
+
+    // check new commitment is valid
+    component newCommiter = Commiter(bits, blockCount, mimcKey);
+    newCommiter.x <== newX;
+    newCommiter.y <== newY;
+    newCommiter.blockhash <== newBlockhash;
+    newCommiter.salt <== newSalt;
+    for (var i = 0;i < blockCount;i++) newCommiter.possibleHashes[i] <== possibleHashes[i];
+    newCommiter.possibleHashesHash <== possibleHashesHash;
+    newCommiter.saltUpperBound <== saltUpperBound;
+    newCommiter.gridUpperBound <== gridUpperBound;
+    newCommiter.commitment <== newCommitment;
+
+    // check new commitment is close enough
+    component isXClose = dist();
+    isXClose.old <== oldX;
+    isXClose.new <== newX;
+    component isYClose = dist();
+    isYClose.old <== oldY;
+    isYClose.new <== newY;
+}

@@ -43,10 +43,7 @@ contract WhitelistFacet is WithStorage, OwnableInternal {
         uint256[2] memory _c,
         uint256[2] memory _input
     ) public {
-        require(
-            WhitelistVerifier.verifyProof(_a, _b, _c, _input),
-            "Failed whitelist proof check"
-        );
+        require(WhitelistVerifier.verifyProof(_a, _b, _c, _input), "Failed whitelist proof check");
 
         uint256 hashedKey = _input[0];
         address payable recipient = payable(address(uint160(_input[1])));
@@ -62,10 +59,7 @@ contract WhitelistFacet is WithStorage, OwnableInternal {
         }
     }
 
-    function adminUseKey(uint256 keyHash, address payable recipient)
-        public
-        onlyOwner
-    {
+    function adminUseKey(uint256 keyHash, address payable recipient) public onlyOwner {
         _useKey(keyHash, recipient);
     }
 
@@ -86,10 +80,7 @@ contract WhitelistFacet is WithStorage, OwnableInternal {
     }
 
     function removeFromWhitelist(address toRemove) public onlyOwner {
-        require(
-            ws().allowedAccounts[toRemove],
-            "player was not whitelisted to begin with"
-        );
+        require(ws().allowedAccounts[toRemove], "player was not whitelisted to begin with");
         ws().allowedAccounts[toRemove] = false;
         for (uint256 i = 0; i < ws().allowedAccountsArray.length; i++) {
             if (ws().allowedAccountsArray[i] == toRemove) {

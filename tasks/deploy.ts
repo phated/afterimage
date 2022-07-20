@@ -1,25 +1,24 @@
-import type { HardhatRuntimeEnvironment } from "hardhat/types";
-import { task } from "hardhat/config";
-import * as fs from "fs";
-import * as path from "path";
-import dedent from "ts-dedent";
+import type { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { task } from 'hardhat/config';
+import * as fs from 'fs';
+import * as path from 'path';
+import dedent from 'ts-dedent';
 
-import { DiamondChanges } from "./utils/diamond";
-import { tscompile } from "./utils/tscompile";
+import { DiamondChanges } from './utils/diamond';
+import { tscompile } from './utils/tscompile';
 
-task("deploy", "deploy all contracts", deploy);
+task('deploy', 'deploy all contracts', deploy);
 
 async function deploy(args: {}, hre: HardhatRuntimeEnvironment) {
-  const isDev =
-    hre.network.name === "localhost" || hre.network.name === "hardhat";
+  const isDev = hre.network.name === 'localhost' || hre.network.name === 'hardhat';
 
   // We always force a compile for tasks
-  await hre.run("compile");
+  await hre.run('compile');
 
   // The first account in `getSigners()` is used as the deployer
   const [deployer] = await hre.ethers.getSigners();
 
-  const requiredEther = hre.ethers.utils.parseEther("2.1");
+  const requiredEther = hre.ethers.utils.parseEther('2.1');
   const balance = await deployer.getBalance();
 
   // When deploying to production, ensure the deployer wallet has enough
@@ -34,9 +33,7 @@ async function deploy(args: {}, hre: HardhatRuntimeEnvironment) {
 
   const changes = new DiamondChanges();
 
-  for (const { diamond, initializer, facets } of Object.values(
-    hre.settings.deployments
-  )) {
+  for (const { diamond, initializer, facets } of Object.values(hre.settings.deployments)) {
     const diamondContract = await deployContract(diamond, hre);
 
     const initializerContract = await deployContract(initializer, hre);
@@ -49,10 +46,7 @@ async function deploy(args: {}, hre: HardhatRuntimeEnvironment) {
       cuts.push(...changes.getFacetCuts(name, facetContract));
     }
 
-    const diamondCut = await hre.ethers.getContractAt(
-      "ZKGame",
-      diamondContract.address
-    );
+    const diamondCut = await hre.ethers.getContractAt('ZKGame', diamondContract.address);
 
     // EIP-2535 specifies that the `diamondCut` function takes two optional
     // arguments: address _init and bytes calldata _calldata
@@ -60,21 +54,16 @@ async function deploy(args: {}, hre: HardhatRuntimeEnvironment) {
     // in order to set state variables in the diamond during deployment or an upgrade
     // More info here: https://eips.ethereum.org/EIPS/eip-2535#diamond-interface
     const initAddress = initializerContract.address;
-    const initFunctionCall = initializerContract.interface.encodeFunctionData(
-      "init",
-      [hre.settings.zkgame.initializers]
-    );
+    const initFunctionCall = initializerContract.interface.encodeFunctionData('init', [
+      hre.settings.zkgame.initializers,
+    ]);
 
-    const initTx = await diamondCut.diamondCut(
-      cuts,
-      initAddress,
-      initFunctionCall
-    );
+    const initTx = await diamondCut.diamondCut(cuts, initAddress, initFunctionCall);
     const initReceipt = await initTx.wait();
     if (!initReceipt.status) {
       throw Error(`Diamond cut failed: ${initTx.hash}`);
     }
-    console.log("Completed diamond cut");
+    console.log('Completed diamond cut');
 
     await saveDeploy(
       {
@@ -89,24 +78,17 @@ async function deploy(args: {}, hre: HardhatRuntimeEnvironment) {
   // TODO: Upstream change to export task name from `hardhat-4byte-uploader`
   if (!isDev) {
     try {
-      await hre.run("upload-selectors", { noCompile: true });
+      await hre.run('upload-selectors', { noCompile: true });
     } catch {
-      console.warn(
-        "WARNING: Unable to update 4byte database with our selectors"
-      );
-      console.warn(
-        "Please run the `upload-selectors` task manually so selectors can be reversed"
-      );
+      console.warn('WARNING: Unable to update 4byte database with our selectors');
+      console.warn('Please run the `upload-selectors` task manually so selectors can be reversed');
     }
   }
 
-  console.log("Deployed successfully.");
+  console.log('Deployed successfully.');
 }
 
-async function deployContract(
-  contractName: string,
-  hre: HardhatRuntimeEnvironment
-) {
+async function deployContract(contractName: string, hre: HardhatRuntimeEnvironment) {
   const factory = await hre.ethers.getContractFactory(contractName);
   const contract = await factory.deploy();
   await contract.deployTransaction.wait();
@@ -122,8 +104,7 @@ async function saveDeploy(
   },
   hre: HardhatRuntimeEnvironment
 ) {
-  const isDev =
-    hre.network.name === "localhost" || hre.network.name === "hardhat";
+  const isDev = hre.network.name === 'localhost' || hre.network.name === 'hardhat';
 
   // Save the addresses of the deployed contracts to the `@zkgame/contracts` package
   const tsContents = dedent`
@@ -177,19 +158,18 @@ async function saveDeploy(
     export const INIT_ADDRESS = '${args.initAddress}';
     `;
 
-  const { jsContents, jsmapContents, dtsContents, dtsmapContents } =
-    tscompile(tsContents);
+  const { jsContents, jsmapContents, dtsContents, dtsmapContents } = tscompile(tsContents);
 
-  const contractsPkgDir = hre.packages.get("@zkgame/contracts");
+  const contractsPkgDir = hre.packages.get('@zkgame/contracts');
   if (!contractsPkgDir) {
-    throw new Error("Unable to locate @zkgame/contracts directory.");
+    throw new Error('Unable to locate @zkgame/contracts directory.');
   }
 
-  const contractsFileTS = path.join(contractsPkgDir, "index.ts");
-  const contractsFileJS = path.join(contractsPkgDir, "index.js");
-  const contractsFileJSMap = path.join(contractsPkgDir, "index.js.map");
-  const contractsFileDTS = path.join(contractsPkgDir, "index.d.ts");
-  const contractsFileDTSMap = path.join(contractsPkgDir, "index.d.ts.map");
+  const contractsFileTS = path.join(contractsPkgDir, 'index.ts');
+  const contractsFileJS = path.join(contractsPkgDir, 'index.js');
+  const contractsFileJSMap = path.join(contractsPkgDir, 'index.js.map');
+  const contractsFileDTS = path.join(contractsPkgDir, 'index.d.ts');
+  const contractsFileDTSMap = path.join(contractsPkgDir, 'index.d.ts.map');
 
   fs.writeFileSync(contractsFileTS, tsContents);
   fs.writeFileSync(contractsFileJS, jsContents);

@@ -61,7 +61,6 @@ export default function Game() {
       });
   }, []);
 
-
   const onGridClick = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
     coords: WorldCoords

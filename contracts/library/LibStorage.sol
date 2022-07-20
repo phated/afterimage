@@ -78,11 +78,9 @@ struct WhitelistStorage {
 library LibStorage {
     // Storage are structs where the data gets updated throughout the lifespan of the game
     bytes32 constant GAME_STORAGE_POSITION = keccak256("zkgame.storage.game");
-    bytes32 constant WHITELIST_STORAGE_POSITION =
-        keccak256("zkgame.storage.whitelist");
+    bytes32 constant WHITELIST_STORAGE_POSITION = keccak256("zkgame.storage.whitelist");
     // Constants are structs where the data gets configured on game initialization
-    bytes32 constant GAME_CONSTANTS_POSITION =
-        keccak256("zkgame.constants.game");
+    bytes32 constant GAME_CONSTANTS_POSITION = keccak256("zkgame.constants.game");
 
     function gameStorage() internal pure returns (GameStorage storage gs) {
         bytes32 position = GAME_STORAGE_POSITION;
@@ -91,11 +89,7 @@ library LibStorage {
         }
     }
 
-    function whitelistStorage()
-        internal
-        pure
-        returns (WhitelistStorage storage gs)
-    {
+    function whitelistStorage() internal pure returns (WhitelistStorage storage gs) {
         bytes32 position = WHITELIST_STORAGE_POSITION;
         assembly {
             gs.slot := position

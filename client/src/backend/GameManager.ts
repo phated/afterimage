@@ -54,7 +54,7 @@ class GameManager extends EventEmitter {
     account: EthAddress | undefined,
     ethConnection: EthConnection,
     contractsAPI: ContractsAPI,
-    GRID_UPPER_BOUND: number,
+    GRID_UPPER_BOUND: number
   ) {
     super();
 
@@ -74,12 +74,7 @@ class GameManager extends EventEmitter {
 
     const contractsAPI = await makeContractsAPI(ethConnection);
     const GRID_UPPER_BOUND = await contractsAPI.getGridUpperBound();
-    const gameManager = new GameManager(
-      account,
-      ethConnection,
-      contractsAPI,
-      GRID_UPPER_BOUND,
-    );
+    const gameManager = new GameManager(account, ethConnection, contractsAPI, GRID_UPPER_BOUND);
 
     // important that this happens AFTER we load the game state from the blockchain. Otherwise our
     // 'loading game state' contract calls will be competing with events from the blockchain that

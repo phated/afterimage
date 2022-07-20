@@ -1,3 +1,16 @@
 {
-    "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "eslint.workingDirectories": ["./client"],
+  "solidity.solhintRules": {},
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "mochaExplorer.files": ["eth/test/**/*.{j,t}s"],
+  "mochaExplorer.cwd": "eth",
+  "editor.formatOnSave": true,
+  "prettier.requireConfig": true,
+  "solidity.formatter": "none",
+  "files.insertFinalNewline": true,
+  "rewrap.autoWrap.enabled": true,
+  "[solidity]": {
+    "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
+  }
 }

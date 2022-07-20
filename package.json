@@ -8,7 +8,8 @@
     "circuits",
     "contracts",
     "tasks",
-    "packages/*"
+    "packages/*",
+    "client"
   ],
   "scripts": {
     "start": "hardhat node --hostname 0.0.0.0",

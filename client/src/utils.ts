@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
-import type { Any } from 'ts-toolbelt';
+import type { Opaque } from 'type-fest';
 
 export const tileTypeToColor: { [key: number]: string } = {
   0: "#ffac17",
@@ -160,22 +160,11 @@ export type PlayerInfo = {
 };
 
 /**
-* An abstract type used to differentiate between common types, like `number` or `string`.
-* The `Id` type parameter is the key to vary upon and should be unique unless being used to subtype.
-*/
-export type Abstract<T, Id extends Any.Key> = Any.Type<T, Id>;
-
-/**
-* Unwraps a Promise type into the type it contains. Useful when working with Promise-returning functions.
-*/
-export type Awaited<T> = Any.Await<T>;
-
-/**
 * This is expected to be a 40-character, lowercase hex string, prefixed with 0x
 * (so 42 characters in total). EthAddress should only ever be instantiated
 * through the `address` function in `serde`.
 */
-export type EthAddress = Abstract<string, 'EthAddress'>;
+export type EthAddress = Opaque<string, 'EthAddress'>;
 
 /**
 * Converts a string to an `EthAddress`: a 0x-prefixed all lowercase hex string

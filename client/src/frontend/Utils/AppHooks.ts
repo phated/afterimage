@@ -1,89 +1,89 @@
-import { useCallback, useState } from 'react';
-import { Wrapper } from '../../backend/Utils/Wrapper';
-import GameManager from '../../backend/GameManager';
-import { useEmitterSubscribe, useWrappedEmitter } from './EmitterHooks';
-import { EthAddress, PlayerInfo, Tile, TileType, WorldCoords } from '../../utils';
-import { createDefinedContext } from './createDefinedContext';
+// import { useCallback, useState } from 'react';
+// import { Wrapper } from '../../backend/Utils/Wrapper';
+// import GameManager from '../../backend/GameManager';
+// import { useEmitterSubscribe, useWrappedEmitter } from './EmitterHooks';
+// import { EthAddress, PlayerInfo, Tile, TileType, WorldCoords } from '../../utils';
+// import { createDefinedContext } from './createDefinedContext';
 
-export const { useDefinedContext: useGameManager, provider: GameManagerProvider } =
-  createDefinedContext<GameManager>();
+// export const { useDefinedContext: useGameManager, provider: GameManagerProvider } =
+//   createDefinedContext<GameManager>();
 
-/**
- * Hook which gets you the tiles
- */
-export function useTiles(gameManager: GameManager | undefined): Wrapper<Tile[][]> {
-  const [tiles, setTiles] = useState<Wrapper<Tile[][]>>(
-    () => new Wrapper(gameManager ? gameManager.getTiles() : [])
-  );
+// /**
+//  * Hook which gets you the tiles
+//  */
+// export function useTiles(gameManager: GameManager | undefined): Wrapper<Tile[][]> {
+//   const [tiles, setTiles] = useState<Wrapper<Tile[][]>>(
+//     () => new Wrapper(gameManager ? gameManager.getTiles() : [])
+//   );
 
-  const onUpdate = useCallback(() => {
-    console.log('onUpdate');
-    setTiles(new Wrapper(gameManager ? gameManager.getTiles() : []));
-  }, [gameManager]);
+//   const onUpdate = useCallback(() => {
+//     console.log('onUpdate');
+//     setTiles(new Wrapper(gameManager ? gameManager.getTiles() : []));
+//   }, [gameManager]);
 
-  useEmitterSubscribe(gameManager?.tileUpdated$, onUpdate);
+//   useEmitterSubscribe(gameManager?.tileUpdated$, onUpdate);
 
-  return tiles;
-}
+//   return tiles;
+// }
 
-export function useInfo(
-  gameManager: GameManager | undefined
-): Wrapper<Map<EthAddress, PlayerInfo>> {
-  const [playerInfos, setPlayerInfos] = useState<Wrapper<Map<EthAddress, PlayerInfo>>>(
-    () => new Wrapper(new Map())
-  );
+// export function useInfo(
+//   gameManager: GameManager | undefined
+// ): Wrapper<Map<EthAddress, PlayerInfo>> {
+//   const [playerInfos, setPlayerInfos] = useState<Wrapper<Map<EthAddress, PlayerInfo>>>(
+//     () => new Wrapper(new Map())
+//   );
 
-  const onUpdate = useCallback(async () => {
-    console.log('onUpdate useLocation');
-    const newInfos = gameManager ? await gameManager.getPlayerInfos() : new Map();
-    console.log('useLocation infos', newInfos);
-    setPlayerInfos(new Wrapper(newInfos));
-  }, [gameManager]);
+//   const onUpdate = useCallback(async () => {
+//     console.log('onUpdate useLocation');
+//     const newInfos = gameManager ? await gameManager.getPlayerInfos() : new Map();
+//     console.log('useLocation infos', newInfos);
+//     setPlayerInfos(new Wrapper(newInfos));
+//   }, [gameManager]);
 
-  useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
+//   useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
 
-  return playerInfos;
-}
+//   return playerInfos;
+// }
 
-export function useInitted(gameManager: GameManager | undefined): Wrapper<boolean> {
-  const [initted, setinitted] = useState<Wrapper<boolean>>(() => new Wrapper(false));
+// export function useInitted(gameManager: GameManager | undefined): Wrapper<boolean> {
+//   const [initted, setinitted] = useState<Wrapper<boolean>>(() => new Wrapper(false));
 
-  const onUpdate = useCallback(async () => {
-    const newInitted = gameManager ? await gameManager.getInitted() : false;
-    setinitted(new Wrapper(newInitted));
-  }, [gameManager]);
+//   const onUpdate = useCallback(async () => {
+//     const newInitted = gameManager ? await gameManager.getInitted() : false;
+//     setinitted(new Wrapper(newInitted));
+//   }, [gameManager]);
 
-  useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
+//   useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
 
-  return initted;
-}
+//   return initted;
+// }
 
-export function useTileTxStatus(gameManager: GameManager | undefined): {
-  submitted: Wrapper<string[]>;
-  confirmed: Wrapper<string[]>;
-  reverted: Wrapper<string[]>;
-} {
-  const [submittedTileTx, setSubmittedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
-  const [confirmedTileTx, setConfirmedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
-  const [revertedTileTx, setRevertedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
+// export function useTileTxStatus(gameManager: GameManager | undefined): {
+//   submitted: Wrapper<string[]>;
+//   confirmed: Wrapper<string[]>;
+//   reverted: Wrapper<string[]>;
+// } {
+//   const [submittedTileTx, setSubmittedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
+//   const [confirmedTileTx, setConfirmedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
+//   const [revertedTileTx, setRevertedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
 
-  const onUpdate = useCallback(async ([tx, status]) => {
-    if (status == 'submitted') {
-      setSubmittedTileTx(new Wrapper([...submittedTileTx.value, tx.actionId]));
-    }
-    if (status == 'confirmed') {
-      setConfirmedTileTx(new Wrapper([...confirmedTileTx.value, tx.actionId]));
-    }
-    if (status == 'reverted') {
-      setRevertedTileTx(new Wrapper([...revertedTileTx.value, tx.actionId]));
-    }
-  }, []);
+//   const onUpdate = useCallback(async ([tx, status]) => {
+//     if (status == 'submitted') {
+//       setSubmittedTileTx(new Wrapper([...submittedTileTx.value, tx.actionId]));
+//     }
+//     if (status == 'confirmed') {
+//       setConfirmedTileTx(new Wrapper([...confirmedTileTx.value, tx.actionId]));
+//     }
+//     if (status == 'reverted') {
+//       setRevertedTileTx(new Wrapper([...revertedTileTx.value, tx.actionId]));
+//     }
+//   }, []);
 
-  useEmitterSubscribe(gameManager?.tileTxUpdated$, onUpdate);
+//   useEmitterSubscribe(gameManager?.tileTxUpdated$, onUpdate);
 
-  return {
-    submitted: submittedTileTx,
-    confirmed: confirmedTileTx,
-    reverted: revertedTileTx,
-  };
-}
+//   return {
+//     submitted: submittedTileTx,
+//     confirmed: confirmedTileTx,
+//     reverted: revertedTileTx,
+//   };
+// }

@@ -1,6 +1,10 @@
 import { Monomitter, monomitter } from '@darkforest_eth/events';
-import { dangerousHTML, WorldCoords } from '../utils';
+import { WorldCoords } from '@darkforest_eth/types';
 import GameManager from './GameManager';
+
+type dangerousHTML = {
+  __html: string;
+};
 
 /**
  * All plugins must conform to this interface. Provides facilities for

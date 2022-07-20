@@ -2,9 +2,11 @@ const path = require('path');
 
 const { EnvironmentPlugin } = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 //const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const webpack = require('webpack')
 
 const createStyledComponentsTransformer = require('typescript-plugin-styled-components').default;
 const styledComponentsTransformer = createStyledComponentsTransformer();
@@ -13,7 +15,7 @@ const isProd = process.env.NODE_ENV === 'production';
 
 module.exports = {
   mode: 'production',
-  entry: ['react-hot-loader/patch', './src/frontend/index.tsx'],
+  entry: './src/frontend/index.tsx',
   output: {
     path: path.join(__dirname, '/dist'),
     filename: 'bundle-[hash:6].min.js',
@@ -33,9 +35,6 @@ module.exports = {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
     // we need this to reference files in the symlinked src/circuits directory
     symlinks: false,
-    alias: {
-      'react-dom': '@hot-loader/react-dom',
-    },
   },
 
   module: {
@@ -65,16 +64,11 @@ module.exports = {
             },
           },
         ],
-      },
-      // All output '.js' files will have any sourcemaps re-processed by 'source-map-loader'.
-      {
-        enforce: 'pre',
-        test: /\.js$/,
-        loader: 'source-map-loader',
-      },
+      }
     ],
   },
   plugins: [
+    !isProd && new ReactRefreshPlugin(),
     // The string values are fallbacks if the env variable is not set
     new EnvironmentPlugin({
       NODE_ENV: 'development',
@@ -85,10 +79,14 @@ module.exports = {
     }),
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
+      filename: './index.html',
       template: './index.html',
     }),
-    new CopyPlugin([{ from: 'public', to: 'public' }]),
-  ],
+    new CopyPlugin({patterns: [{ from: 'public', to: 'public' }]}),
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+    })
+  ].filter(Boolean),
 
   // When importing a module whose path matches one of the following, just
   // assume a corresponding global variable exists and use that instead.

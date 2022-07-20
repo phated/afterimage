@@ -6,16 +6,7 @@ import {
   TxIntent,
 } from "@darkforest_eth/types";
 import {
-  ProveTileContractCallArgs,
-  TransitionTileContractCallArgs,
-  Tile,
-  TileType,
-  WorldCoords,
-  Awaited,
   address,
-  EthAddress,
-  PlayerInfo,
-  TileContractMetaData,
 } from '../utils';
 import type { ZKGame } from '@zkgame/typechain';
 import {
@@ -45,7 +36,6 @@ import {
 import {
   loadCoreContract,
 } from './Blockchain';
-import { nullAddress, promiseWithTimeout } from '../utils';
 
 /**
  * Roughly contains methods that map 1:1 with functions that live in the contract. Responsible for

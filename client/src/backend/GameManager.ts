@@ -1,10 +1,9 @@
 import { EthConnection } from '@darkforest_eth/network';
 import { monomitter, Monomitter, Subscription } from '@darkforest_eth/events';
 import { perlin } from '@darkforest_eth/hashing';
-import { address, EthAddress, FuncABI, PlayerInfo, Tile, WorldCoords } from '../utils';
+import { EthAddress, WorldCoords } from '@darkforest_eth/types';
 import { EventEmitter } from 'events';
 import { ContractsAPI, makeContractsAPI } from './ContractsAPI';
-import { getRandomActionId, nullAddress } from '../utils';
 import {
   ContractMethodName,
   ContractsAPIEvent,

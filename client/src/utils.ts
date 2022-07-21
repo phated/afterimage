@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
-import type { Opaque } from 'type-fest';
+import { EthAddress } from '@darkforest_eth/types';
 import BigInt, { BigInteger } from 'big-integer';
 
 import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
@@ -81,36 +81,10 @@ export const DEV_TEST_PRIVATE_KEY = [
   '0x67195c963ff445314e667112ab22f4a7404bad7f9746564eb409b9bb8c6aed32', //
 ];
 
-export enum TileType {
+export enum TileKnowledge {
   UNKNOWN,
-  WATER,
-  SAND,
-  TREE,
-  STUMP,
-  CHEST,
-  FARM,
-  WINDMILL,
-  GRASS,
-  SNOW,
-  STONE,
-  ICE,
-  MAX = ICE,
-}
-
-export enum TemperatureType {
-  COLD,
-  NORMAL,
-  HOT,
-  MAX = HOT,
-}
-
-export enum AltitudeType {
-  SEA,
-  BEACH,
-  LAND,
-  MOUNTAIN,
-  MOUNTAINTOP,
-  MAX = MOUNTAINTOP,
+  KNOWN,
+  MAX = KNOWN,
 }
 
 export type WorldCoords = {
@@ -136,7 +110,8 @@ export type TileContractMetaData = {
 
 export type Tile = {
   coords: WorldCoords;
-  tileType: TileType;
+  tileType: TileKnowledge;
+  metas: CommitmentMetadata[];
 };
 
 export type PlayerInfo = {
@@ -148,13 +123,6 @@ export type PlayerInfo = {
   canMoveSnow: boolean;
   canPutAnything: boolean;
 };
-
-/**
- * This is expected to be a 40-character, lowercase hex string, prefixed with 0x
- * (so 42 characters in total). EthAddress should only ever be instantiated
- * through the `address` function in `serde`.
- */
-export type EthAddress = Opaque<string, 'EthAddress'>;
 
 /**
  * Converts a string to an `EthAddress`: a 0x-prefixed all lowercase hex string
@@ -186,4 +154,19 @@ export type RawCommitment = {
   blockhash: string;
   salt: string;
   commitment: string;
+};
+
+export type CommitmentInfo = RawCommitment & {
+  address: EthAddress;
+};
+
+export type OptimisticCommitmentInfo = CommitmentInfo & {
+  actionId: string;
+};
+
+export type CommitmentMetadata = {
+  commitment: string;
+  address: EthAddress;
+  blockNum: string;
+  isCurrent: boolean;
 };

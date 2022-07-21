@@ -27,21 +27,17 @@ import initCircuitPath from '@zkgame/snarks/init.wasm';
 import initCircuitZkey from '@zkgame/snarks/init.zkey';
 import moveCircuitPath from '@zkgame/snarks/move.wasm';
 import moveCircuitZkey from '@zkgame/snarks/move.zkey';
-import { getRandomActionId, RawCommitment } from '../utils';
+import {
+  address,
+  getRandomActionId,
+  RawCommitment,
+  Tile,
+  TileKnowledge,
+  CommitmentInfo,
+  OptimisticCommitmentInfo,
+  CommitmentMetadata,
+} from '../utils';
 import { MinerManager } from './Miner';
-
-type CommitmentInfo = RawCommitment & {
-  address: EthAddress;
-};
-
-type OptimisticCommitmentInfo = CommitmentInfo & {
-  actionId: string;
-};
-
-type CommitmentMetadata = {
-  address: EthAddress;
-  blockNum: string;
-};
 
 class GameManager extends EventEmitter {
   /**
@@ -87,6 +83,7 @@ class GameManager extends EventEmitter {
   public commitmentToMetadata: Map<string, CommitmentMetadata>;
   public commitmentToMinedCommitment: Map<string, RawCommitment>;
   public minerManager: MinerManager;
+  private tiles: Tile[][];
 
   private constructor(
     account: EthAddress | undefined,
@@ -106,6 +103,14 @@ class GameManager extends EventEmitter {
     this.SALT_UPPER_BOUND = SALT_UPPER_BOUND;
     this.playerUpdated$ = monomitter();
     this.minedTilesUpdated$ = monomitter();
+    this.tiles = [];
+    for (let i = 0; i < GRID_UPPER_BOUND; i++) {
+      const row = [];
+      for (let j = 0; j < GRID_UPPER_BOUND; j++) {
+        row.push({ coords: { x: i, y: j }, tileType: TileKnowledge.UNKNOWN, metas: [] });
+      }
+      this.tiles.push(row);
+    }
     this.addressToLatestCommitment = new Map();
     this.commitmentToMetadata = new Map();
     this.commitmentToMinedCommitment = new Map();
@@ -149,11 +154,30 @@ class GameManager extends EventEmitter {
           // TODO: do something???
           console.log('event player', moverAddr, commitment);
 
+          // reset previous one
+          const prevCommitment = gameManager.addressToLatestCommitment.get(moverAddr);
+          if (prevCommitment) {
+            const oldMetaData = gameManager.commitmentToMetadata.get(prevCommitment)!;
+            oldMetaData.isCurrent = false;
+            gameManager.commitmentToMetadata.set(prevCommitment, oldMetaData);
+          }
+
           gameManager.addressToLatestCommitment.set(moverAddr, commitment.toString());
           gameManager.commitmentToMetadata.set(commitment.toString(), {
+            commitment: commitment.toString(),
             address: moverAddr,
             blockNum: blockNum.toString(),
+            isCurrent: true,
           });
+
+          if (gameManager.commitmentToMinedCommitment.get(commitment.toString())) {
+            const commit = gameManager.commitmentToMinedCommitment.get(commitment.toString())!;
+            gameManager.tiles[commit.x][commit.y].tileType = TileKnowledge.KNOWN;
+            if (gameManager.commitmentToMetadata.get(commit.commitment) !== undefined) {
+              const meta = gameManager.commitmentToMetadata.get(commit.commitment)!;
+              gameManager.tiles[commit.x][commit.y].metas.push(meta);
+            }
+          }
 
           if (gameManager.optimisticSelfInfo.commitment === commitment.toString()) {
             gameManager.selfInfo = gameManager.optimisticSelfInfo;
@@ -190,6 +214,11 @@ class GameManager extends EventEmitter {
         salt: commit.salt.toString(),
         commitment: commit.commitment,
       });
+      this.tiles[commit.x][commit.y].tileType = TileKnowledge.KNOWN;
+      if (this.commitmentToMetadata.get(commit.commitment) !== undefined) {
+        const meta = this.commitmentToMetadata.get(commit.commitment)!;
+        this.tiles[commit.x][commit.y].metas.push(meta);
+      }
     }
     this.minedTilesUpdated$.publish();
   }
@@ -416,19 +445,22 @@ class GameManager extends EventEmitter {
     });
   }
 
-  public getMinedTiles() {
-    const res: [number, number][] = [];
-    for (const commit of this.commitmentToMinedCommitment.values()) {
-      if (
-        res.length == 0 ||
-        res[res.length - 1][0] !== commit.x ||
-        res[res.length - 1][1] !== commit.y
-      ) {
-        res.push([commit.x, commit.y]);
+  public getTiles() {
+    // tiles meta might be stale, refresh it
+    for (let i = 0; i < this.GRID_UPPER_BOUND; i++) {
+      for (let j = 0; j < this.GRID_UPPER_BOUND; j++) {
+        const newMetas: CommitmentMetadata[] = [];
+        for (const meta of this.tiles[i][j].metas) {
+          newMetas.push(this.commitmentToMetadata.get(meta.commitment)!);
+        }
+        this.tiles[i][j].metas = newMetas;
       }
     }
-    console.log('res', res);
-    return res;
+    return this.tiles;
+  }
+
+  public getSelfLoc() {
+    return this.selfInfo;
   }
 }
 

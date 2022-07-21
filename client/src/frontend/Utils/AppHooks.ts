@@ -3,19 +3,36 @@ import { Wrapper } from '../../backend/Utils/Wrapper';
 import GameManager from '../../backend/GameManager';
 import { useEmitterSubscribe, useWrappedEmitter } from './EmitterHooks';
 import { createDefinedContext } from './createDefinedContext';
-import { WorldCoords } from '../../utils';
+import { CommitmentInfo, Tile, WorldCoords } from '../../utils';
 
 export const { useDefinedContext: useGameManager, provider: GameManagerProvider } =
   createDefinedContext<GameManager>();
 
-export function useMinedCoords(gameManager: GameManager | undefined): Wrapper<[number, number][]> {
-  const [tiles, setTiles] = useState<Wrapper<[number, number][]>>(
-    () => new Wrapper(gameManager ? gameManager.getMinedTiles() : [])
+export function useTiles(gameManager: GameManager | undefined): Wrapper<Tile[][]> {
+  const [tiles, setTiles] = useState<Wrapper<Tile[][]>>(
+    () => new Wrapper(gameManager ? gameManager.getTiles() : [])
   );
 
   const onUpdate = useCallback(() => {
     console.log('onUpdate');
-    setTiles(new Wrapper(gameManager ? gameManager.getMinedTiles() : []));
+    setTiles(new Wrapper(gameManager ? gameManager.getTiles() : []));
+  }, [gameManager]);
+
+  useEmitterSubscribe(gameManager?.minedTilesUpdated$, onUpdate);
+
+  return tiles;
+}
+
+export function useSelfLoc(
+  gameManager: GameManager | undefined
+): Wrapper<CommitmentInfo | undefined> {
+  const [tiles, setTiles] = useState<Wrapper<CommitmentInfo | undefined>>(
+    () => new Wrapper(gameManager ? gameManager.getSelfLoc() : undefined)
+  );
+
+  const onUpdate = useCallback(() => {
+    console.log('onUpdate');
+    setTiles(new Wrapper(gameManager ? gameManager.getSelfLoc() : undefined));
   }, [gameManager]);
 
   useEmitterSubscribe(gameManager?.minedTilesUpdated$, onUpdate);

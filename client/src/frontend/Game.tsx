@@ -4,40 +4,23 @@ import tinycolor from 'tinycolor2';
 import GameManager from '../backend/GameManager';
 import {
   DEV_TEST_PRIVATE_KEY,
-  MINED_COLOR,
   Tile,
-  TileType,
-  UNMINED_COLOR,
+  TileKnowledge,
   WorldCoords,
+  MINED_COLOR,
+  UNMINED_COLOR,
 } from '../utils';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
 import { EthConnection } from '@darkforest_eth/network';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
-import { useMinedCoords } from './Utils/AppHooks';
+import { useSelfLoc, useTiles } from './Utils/AppHooks';
 
 const enum LoadingStep {
   NONE,
   LOADED_ETH_CONNECTION,
   LOADED_GAME_MANAGER,
   LOADED_PLUGIN_MANAGER,
-}
-
-function buildTiles(gridUpperBound: number) {
-  console.log(`grid upper bound: ${gridUpperBound}`);
-  const tiles: Tile[][] = [];
-  for (let y = 0; y < gridUpperBound; y++) {
-    const row: Tile[] = [];
-    for (let x = 0; x < gridUpperBound; x++) {
-      row.push({
-        coords: { x, y },
-        tileType: TileType.SAND,
-      });
-    }
-
-    tiles.push(row);
-  }
-  return tiles;
 }
 
 export default function Game() {
@@ -48,12 +31,8 @@ export default function Game() {
   const [ethConnection, setEthConnection] = useState<EthConnection | undefined>();
   const [step, setStep] = useState(LoadingStep.NONE);
   const [error, setError] = useState('no errors');
-  const [tiles, setTiles] = useState<Tile[][]>([]);
-  const [curPosition, setCurPosition] = useState<WorldCoords>({ x: 2, y: 4 });
-
-  // map for mined tiles (coords -> hash)
-  const minedCoords = useMinedCoords(gameManager);
-  // map for hash -> address based on contract events
+  const tiles = useTiles(gameManager);
+  const selfLoc = useSelfLoc(gameManager);
 
   useEffect(() => {
     getEthConnection()
@@ -66,7 +45,6 @@ export default function Game() {
         // TODO: add back in after testing manually
         // gm.startMining(curPosition);
         setGameManager(gm);
-        setTiles(buildTiles(gm.getGridUpperBound()));
         setStep(LoadingStep.LOADED_GAME_MANAGER);
         const pm = new PluginManager(gameManager!);
         window.pm = pm;
@@ -79,35 +57,30 @@ export default function Game() {
       });
   }, []);
 
-  useEffect(() => {
-    for (const minedCoord of minedCoords.value) {
-      tiles[minedCoord[0]][minedCoord[1]].tileType = TileType.FARM;
-    }
-  }, [minedCoords.value]);
-
   const onGridClick = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
     coords: WorldCoords
   ) => {
     event.preventDefault();
     console.log('coords', coords);
-    console.log('tile', tiles[coords.x][coords.y]);
+    console.log('tile', tiles.value[coords.x][coords.y]);
   };
 
   return (
     <>
-      {gameManager && tiles ? (
+      {gameManager && tiles.value ? (
         <>
           <FullScreen>
-            {tiles.map((coordRow, i) => {
+            {tiles.value.map((coordRow, i) => {
               return (
                 <GridRow key={i}>
                   {coordRow.map((tile, j) => {
                     // set color based on mining (and other things eventually)
-                    const color = tile.tileType == TileType.FARM ? MINED_COLOR : UNMINED_COLOR;
+                    const color =
+                      tile.tileType == TileKnowledge.KNOWN ? MINED_COLOR : UNMINED_COLOR;
 
                     let style = { backgroundColor: color, backgroundImage: '' };
-                    if (curPosition.x == tile.coords.x && curPosition.y == tile.coords.y) {
+                    if (selfLoc.value!.x == tile.coords.x && selfLoc.value!.y == tile.coords.y) {
                       style.backgroundImage = `url('./fremen.png')`;
                     }
 

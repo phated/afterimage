@@ -30,6 +30,22 @@ export interface InitSnarkInput {
   commitment: string;
 }
 
+export interface MoveSnarkInput {
+  oldX: string;
+  oldY: string;
+  oldSalt: string;
+  oldCommitment: string;
+  newX: string;
+  newY: string;
+  newBlockhash: string;
+  possibleHashes: string[];
+  possibleHashesHash: string;
+  newSalt: string;
+  saltUpperBound: string;
+  gridUpperBound: string;
+  newCommitment: string;
+}
+
 export type ContractCallArgs = [
   string,
   string,
@@ -84,7 +100,7 @@ type ZKPTask = {
   onError: (e: Error) => void;
 };
 
-type SnarkInput = InitSnarkInput;
+type SnarkInput = InitSnarkInput | MoveSnarkInput;
 
 export class SnarkProverQueue {
   private taskQueue: FastQueue.queue;

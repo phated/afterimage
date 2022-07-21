@@ -115,18 +115,18 @@ template Move(bits, blockCount, mimcKey) {
     signal input oldY;
     signal input oldBlockhash;
     signal input oldSalt;
-    signal input oldCommitment;
 
     signal input newX;
     signal input newY;
     signal input newBlockhash;
     signal input newSalt;
-    signal input newCommitment;
 
     signal input possibleHashes[blockCount];
     signal input possibleHashesHash;
     signal input saltUpperBound;
     signal input gridUpperBound;
+    signal input oldCommitment;
+    signal input newCommitment;
 
     // check old commitment lines up
     component oldCommiter = MiMCSponge(4, 220, 1);

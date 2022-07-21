@@ -5,9 +5,10 @@ import {WithStorage} from "../library/LibStorage.sol";
 import {LibMIMC} from "../library/LibMIMC.sol";
 import {Verifier as InitVerifier} from "../library/InitVerifier.sol";
 import {Verifier as MoveVerifier} from "../library/MoveVerifier.sol";
+import "hardhat/console.sol";
 
 contract CoreFacet is WithStorage {
-    event PlayerUpdated(address, uint256);
+    event PlayerUpdated(address, uint256, uint256);
 
     constructor() {}
 
@@ -53,7 +54,7 @@ contract CoreFacet is WithStorage {
         require(gs().playerStates[msg.sender].commitment == 0, "Player already initialized");
 
         gs().playerStates[msg.sender].commitment = _input[3];
-        emit PlayerUpdated(msg.sender, gs().playerStates[msg.sender].commitment);
+        emit PlayerUpdated(msg.sender, gs().playerStates[msg.sender].commitment, block.number);
     }
 
     function movePlayer(
@@ -66,7 +67,7 @@ contract CoreFacet is WithStorage {
     ) public notPaused {
         uint256 possibleHashesHash = assembleHash(blockNumLower, blockNumUpper);
         uint256 currentLoc = gs().playerStates[msg.sender].commitment;
-        // test
+        console.log("possibleHashesHash: ", possibleHashesHash);
         require(_input[0] == possibleHashesHash, "Block number commitment hash mismatch");
         require(_input[1] == gs().saltUpperBound, "Salt upper bound mismatch");
         require(_input[2] == gameConstants().GRID_UPPER_BOUND, "Grid upper bound mismatch");
@@ -74,6 +75,6 @@ contract CoreFacet is WithStorage {
         require(MoveVerifier.verifyProof(_a, _b, _c, _input), "Bad proof");
 
         gs().playerStates[msg.sender].commitment = _input[4];
-        emit PlayerUpdated(msg.sender, gs().playerStates[msg.sender].commitment);
+        emit PlayerUpdated(msg.sender, gs().playerStates[msg.sender].commitment, block.number);
     }
 }

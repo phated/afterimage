@@ -11,6 +11,7 @@ import {
 } from '@darkforest_eth/network';
 import { EventEmitter } from 'events';
 import {
+  BigNumber,
   BigNumber as EthersBN,
   Contract,
   ContractFunction /*, ethers, Event, providers*/,
@@ -143,8 +144,17 @@ export class ContractsAPI extends EventEmitter {
     };
 
     const eventHandlers = {
-      [ContractEvent.PlayerUpdated]: (rawAddress: string, commitment: number) => {
-        this.emit(ContractsAPIEvent.PlayerUpdated, address(rawAddress), commitment);
+      [ContractEvent.PlayerUpdated]: (
+        rawAddress: string,
+        commitment: BigNumber,
+        blockNum: BigNumber
+      ) => {
+        this.emit(
+          ContractsAPIEvent.PlayerUpdated,
+          address(rawAddress),
+          commitment.toBigInt(),
+          blockNum.toBigInt()
+        );
       },
     };
 
@@ -183,6 +193,25 @@ export class ContractsAPI extends EventEmitter {
     };
 
     return this.waitFor(unminedInitPlayerTx, tx.confirmedPromise);
+  }
+
+  public async movePlayer(action: UnconfirmedMovePlayer) {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const tx = await this.txExecutor.queueTransaction({
+      contract: this.coreContract,
+      methodName: action.methodName,
+      args: action.callArgs,
+    });
+    const unminedMovePlayerTx: SubmittedMovePlayer = {
+      ...action,
+      txHash: (await tx.submittedPromise).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedMovePlayerTx, tx.confirmedPromise);
   }
 
   /**

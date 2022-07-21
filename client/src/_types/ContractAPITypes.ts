@@ -34,7 +34,7 @@ export type SubmittedTx = TxIntent & {
 
 export type UnconfirmedMovePlayer = TxIntent & {
   methodName: ContractMethodName.MOVE_PLAYER;
-  coords: WorldCoords;
+  callArgs: Promise<unknown[]>;
 };
 
 export type SubmittedMovePlayer = UnconfirmedMovePlayer & SubmittedTx;

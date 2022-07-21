@@ -25,14 +25,22 @@ import { mimcHash, mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing'
 import BigInt, { BigInteger } from 'big-integer';
 import initCircuitPath from '@zkgame/snarks/init.wasm';
 import initCircuitZkey from '@zkgame/snarks/init.zkey';
+import moveCircuitPath from '@zkgame/snarks/move.wasm';
+import moveCircuitZkey from '@zkgame/snarks/move.zkey';
 import { getRandomActionId } from '../utils';
 
 type CommitmentInfo = {
   x: number;
   y: number;
   blockhash: string;
-  salt: number;
+  salt: string;
   commitment: string;
+  address: EthAddress;
+};
+
+type CommitmentMetadata = {
+  address: EthAddress;
+  blockNum: string;
 };
 
 class GameManager extends EventEmitter {
@@ -67,11 +75,15 @@ class GameManager extends EventEmitter {
   private readonly ethConnection: EthConnection;
   private readonly snarkProverQueue: SnarkProverQueue;
 
-  private readonly selfInfo: CommitmentInfo;
+  private selfInfo: CommitmentInfo;
 
   private readonly GRID_UPPER_BOUND: number;
   private readonly SALT_UPPER_BOUND: number;
   public playerUpdated$: Monomitter<void>;
+
+  public addressToLatestCommitment: Map<EthAddress, string>;
+  public commitmentToMetadata: Map<string, CommitmentMetadata>;
+  public commitmentToDecodedCommitment: Map<string, CommitmentInfo>;
 
   private constructor(
     account: EthAddress | undefined,
@@ -90,6 +102,9 @@ class GameManager extends EventEmitter {
     this.GRID_UPPER_BOUND = GRID_UPPER_BOUND;
     this.SALT_UPPER_BOUND = SALT_UPPER_BOUND;
     this.playerUpdated$ = monomitter();
+    this.addressToLatestCommitment = new Map();
+    this.commitmentToMetadata = new Map();
+    this.commitmentToDecodedCommitment = new Map();
   }
 
   static async create(ethConnection: EthConnection) {
@@ -121,17 +136,26 @@ class GameManager extends EventEmitter {
     // do some logic
     // also, handle state updates for locally-initialized txIntents
     gameManager.contractsAPI
-      .on(ContractsAPIEvent.PlayerUpdated, async (moverAddr: EthAddress, coords: WorldCoords) => {
-        // todo: update in memory data store
-        // todo: emit event to UI
-        // TODO: do something???
-        console.log('event player', coords);
+      .on(
+        ContractsAPIEvent.PlayerUpdated,
+        async (moverAddr: EthAddress, commitment: BigInt, blockNum: BigInt) => {
+          // todo: update in memory data store
+          // todo: emit event to UI
+          // TODO: do something???
+          console.log('event player', moverAddr, commitment);
 
-        if (!gameManager.account) {
-          throw new Error('no account set');
+          gameManager.addressToLatestCommitment.set(moverAddr, commitment.toString());
+          gameManager.commitmentToMetadata.set(commitment.toString(), {
+            address: moverAddr,
+            blockNum: blockNum.toString(),
+          });
+
+          if (!gameManager.account) {
+            throw new Error('no account set');
+          }
+          gameManager.playerUpdated$.publish();
         }
-        gameManager.playerUpdated$.publish();
-      })
+      )
       .on(ContractsAPIEvent.TxSubmitted, (unconfirmedTx: SubmittedTx) => {
         // todo: save the tx to localstorage
         gameManager.onTxSubmit(unconfirmedTx);
@@ -196,7 +220,7 @@ class GameManager extends EventEmitter {
     return this.SALT_UPPER_BOUND;
   }
 
-  private async assembleInitSnarkInput(x: number, y: number) {
+  private async assembleNewLocationSnarkInput(x: number, y: number) {
     const provider = this.ethConnection.getProvider();
     const latestBlockNumber = await provider.getBlockNumber();
     const possibleHashes = [];
@@ -218,17 +242,24 @@ class GameManager extends EventEmitter {
       123
     )[0];
 
-    const snarkInput: InitSnarkInput = {
-      x: x.toString(),
-      y: y.toString(),
-      possibleHashes: possibleHashes.map((x) => x.toString()),
-      possibleHashesHash: possibleHashesHash.toString(),
-      blockhash: blockhash.toString(),
-      salt: salt.toString(),
-      saltUpperBound: this.SALT_UPPER_BOUND.toString(),
-      gridUpperBound: this.GRID_UPPER_BOUND.toString(),
-      commitment: commitment.toString(),
+    return {
+      latestBlockNumber,
+      snarkInput: {
+        x: x.toString(),
+        y: y.toString(),
+        possibleHashes: possibleHashes.map((x) => x.toString()),
+        possibleHashesHash: possibleHashesHash.toString(),
+        blockhash: blockhash.toString(),
+        salt: salt.toString(),
+        saltUpperBound: this.SALT_UPPER_BOUND.toString(),
+        gridUpperBound: this.GRID_UPPER_BOUND.toString(),
+        commitment: commitment.toString(),
+      },
     };
+  }
+
+  private async assembleInitSnarkInput(x: number, y: number) {
+    const { latestBlockNumber, snarkInput } = await this.assembleNewLocationSnarkInput(x, y);
 
     console.log('snarkInp', snarkInput);
 
@@ -247,6 +278,63 @@ class GameManager extends EventEmitter {
 
     console.log('callArgs', callArgs);
 
+    this.selfInfo = {
+      x,
+      y,
+      blockhash: snarkInput.blockhash,
+      salt: snarkInput.salt,
+      commitment: snarkInput.commitment,
+      address: this.account!,
+    };
+
+    return callArgs;
+  }
+
+  private async assembleMoveSnarkInput(x: number, y: number) {
+    const { latestBlockNumber, snarkInput } = await this.assembleNewLocationSnarkInput(x, y);
+
+    const fullInput = {
+      oldX: this.selfInfo.x.toString(),
+      oldY: this.selfInfo.y.toString(),
+      oldBlockhash: this.selfInfo.blockhash,
+      oldSalt: this.selfInfo.salt,
+      oldCommitment: this.selfInfo.commitment,
+      newX: snarkInput.x,
+      newY: snarkInput.y,
+      newBlockhash: snarkInput.blockhash,
+      newSalt: snarkInput.salt,
+      newCommitment: snarkInput.commitment,
+      possibleHashes: snarkInput.possibleHashes,
+      possibleHashesHash: snarkInput.possibleHashesHash,
+      saltUpperBound: snarkInput.saltUpperBound,
+      gridUpperBound: snarkInput.gridUpperBound,
+    };
+    console.log('fullInput', fullInput);
+
+    const proofAndSignalData = await this.snarkProverQueue.doProof(
+      fullInput,
+      moveCircuitPath,
+      moveCircuitZkey
+    );
+
+    const callArgs = buildContractCallArgs(
+      (latestBlockNumber - 31).toString(),
+      latestBlockNumber.toString(),
+      proofAndSignalData.proof,
+      proofAndSignalData.publicSignals
+    );
+
+    console.log('callArgs', callArgs);
+
+    this.selfInfo = {
+      x,
+      y,
+      blockhash: snarkInput.blockhash,
+      salt: snarkInput.salt,
+      commitment: snarkInput.commitment,
+      address: this.account!,
+    };
+
     return callArgs;
   }
 
@@ -259,6 +347,19 @@ class GameManager extends EventEmitter {
     };
     this.onTxIntent(txIntent);
     this.contractsAPI.initPlayer(txIntent).catch((err) => {
+      this.onTxIntentFail(txIntent, err);
+    });
+  }
+
+  public async movePlayer(x: number, y: number) {
+    const actionId = getRandomActionId();
+    const txIntent: UnconfirmedMovePlayer = {
+      actionId,
+      methodName: ContractMethodName.MOVE_PLAYER,
+      callArgs: this.assembleMoveSnarkInput(x, y),
+    };
+    this.onTxIntent(txIntent);
+    this.contractsAPI.movePlayer(txIntent).catch((err) => {
       this.onTxIntentFail(txIntent, err);
     });
   }

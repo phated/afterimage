@@ -183,3 +183,11 @@ export function address(str: string): EthAddress {
 export function getCommitment(x: number, y: number, blockhash: BigInteger, salt: number) {
   return mimcSponge([BigInt(x), BigInt(y), blockhash, BigInt(salt)], 1, 220, 123)[0];
 }
+
+export type RawCommitment = {
+  x: number;
+  y: number;
+  blockhash: string;
+  salt: string;
+  commitment: string;
+};

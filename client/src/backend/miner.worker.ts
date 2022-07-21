@@ -1,5 +1,6 @@
 import { getCommitment, WorldCoords } from '../utils';
 import BigInt, { BigInteger } from 'big-integer';
+import { modPBigIntNative } from '@darkforest_eth/hashing';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ctx: Worker = self as any;
@@ -10,7 +11,7 @@ function startMining(
   saltUpperBound: number,
   startX: number,
   startY: number,
-  blockhashes: BigInteger[]
+  blockhashes: string[]
 ) {
   let curX = 0;
   let curY = 0;
@@ -27,21 +28,29 @@ function startMining(
 
       const realX = curX + startX;
       const realY = curY + startY;
+      const allCommits = [];
       for (var potBlockhash of blockhashes) {
         for (var potSalt = 0; potSalt < saltUpperBound; potSalt++) {
-          const commit = getCommitment(realX, realY, potBlockhash, potSalt);
-          postMessage({
-            type: 'mined',
-            commitInfo: {
-              x: realX,
-              y: realY,
-              blockhash: potBlockhash,
-              salt: potSalt,
-              commitment: commit,
-            },
+          const commit = getCommitment(
+            realX,
+            realY,
+            modPBigIntNative(BigInt(potBlockhash.slice(2), 16)),
+            potSalt
+          );
+          allCommits.push({
+            x: realX,
+            y: realY,
+            blockhash: modPBigIntNative(BigInt(potBlockhash.slice(2), 16)).toString(),
+            salt: potSalt,
+            commitment: commit.toString(),
           });
         }
       }
+
+      postMessage({
+        type: 'mined',
+        commits: allCommits,
+      });
     }
     if (curX == curY || (curX < 0 && curX == -curY) || (curX > 0 && curX == 1 - curY)) {
       let temp = dx;

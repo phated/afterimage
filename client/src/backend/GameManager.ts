@@ -27,15 +27,10 @@ import initCircuitPath from '@zkgame/snarks/init.wasm';
 import initCircuitZkey from '@zkgame/snarks/init.zkey';
 import moveCircuitPath from '@zkgame/snarks/move.wasm';
 import moveCircuitZkey from '@zkgame/snarks/move.zkey';
-import { getRandomActionId } from '../utils';
+import { getRandomActionId, RawCommitment } from '../utils';
 import { MinerManager } from './Miner';
 
-type CommitmentInfo = {
-  x: number;
-  y: number;
-  blockhash: string;
-  salt: string;
-  commitment: string;
+type CommitmentInfo = RawCommitment & {
   address: EthAddress;
 };
 
@@ -86,10 +81,11 @@ class GameManager extends EventEmitter {
   private readonly GRID_UPPER_BOUND: number;
   private readonly SALT_UPPER_BOUND: number;
   public playerUpdated$: Monomitter<void>;
+  public minedTilesUpdated$: Monomitter<void>;
 
   public addressToLatestCommitment: Map<EthAddress, string>;
   public commitmentToMetadata: Map<string, CommitmentMetadata>;
-  public commitmentToDecodedCommitment: Map<string, CommitmentInfo>;
+  public commitmentToMinedCommitment: Map<string, RawCommitment>;
   public minerManager: MinerManager;
 
   private constructor(
@@ -109,9 +105,10 @@ class GameManager extends EventEmitter {
     this.GRID_UPPER_BOUND = GRID_UPPER_BOUND;
     this.SALT_UPPER_BOUND = SALT_UPPER_BOUND;
     this.playerUpdated$ = monomitter();
+    this.minedTilesUpdated$ = monomitter();
     this.addressToLatestCommitment = new Map();
     this.commitmentToMetadata = new Map();
-    this.commitmentToDecodedCommitment = new Map();
+    this.commitmentToMinedCommitment = new Map();
     this.minerManager = MinerManager.create(GRID_UPPER_BOUND);
   }
 
@@ -184,14 +181,17 @@ class GameManager extends EventEmitter {
     return gameManager;
   }
 
-  public async processMine(
-    x: number,
-    y: number,
-    blockhash: BigInteger,
-    salt: number,
-    commitment: BigInteger
-  ) {
-    console.log('got mine in GM', x, y, blockhash, salt, commitment);
+  public processMine(commits: RawCommitment[]) {
+    for (const commit of commits) {
+      this.commitmentToMinedCommitment.set(commit.commitment, {
+        x: commit.x,
+        y: commit.y,
+        blockhash: commit.blockhash,
+        salt: commit.salt.toString(),
+        commitment: commit.commitment,
+      });
+    }
+    this.minedTilesUpdated$.publish();
   }
 
   public async startMining(x: number, y: number) {
@@ -200,11 +200,11 @@ class GameManager extends EventEmitter {
     const possibleHashes = [];
     for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
       const block = await provider.getBlock(i);
-      possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
+      possibleHashes.push(block.hash);
     }
     this.minerManager.startMining(
       this.GRID_UPPER_BOUND,
-      10,
+      this.SALT_UPPER_BOUND,
       x,
       y,
       possibleHashes,
@@ -414,6 +414,21 @@ class GameManager extends EventEmitter {
     this.contractsAPI.movePlayer(txIntent).catch((err) => {
       this.onTxIntentFail(txIntent, err);
     });
+  }
+
+  public getMinedTiles() {
+    const res: [number, number][] = [];
+    for (const commit of this.commitmentToMinedCommitment.values()) {
+      if (
+        res.length == 0 ||
+        res[res.length - 1][0] !== commit.x ||
+        res[res.length - 1][1] !== commit.y
+      ) {
+        res.push([commit.x, commit.y]);
+      }
+    }
+    console.log('res', res);
+    return res;
   }
 }
 

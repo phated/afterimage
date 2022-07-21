@@ -78,8 +78,6 @@ export default function Game() {
         window.pm = pm;
         setPluginManager(pm);
         setStep(LoadingStep.LOADED_PLUGIN_MANAGER);
-
-        // TODO: start miner! a thread that mines tiles until it's told that the next block is here
       })
       .catch((e) => {
         console.log(e);

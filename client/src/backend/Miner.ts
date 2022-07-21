@@ -29,7 +29,8 @@ export class MinerManager {
   public startMining(
     gridUpperBound: number,
     startPos: WorldCoords,
-    blockhash: String
+    blockhash: String,
+    onMined: (coords: WorldCoords, commitment: bigInt.BigInteger) => void
   ) {
     this.miner = defaultWorker();
 
@@ -39,6 +40,11 @@ export class MinerManager {
       gridUpperBound,
       blockhash,
     });
+
+    this.miner.onmessage = (e: MessageEvent) => {
+      console.log("received message:", e.data);
+      onMined(e.data.coords, e.data.commitment);
+    };
   }
 
   // NOTE: for debugging

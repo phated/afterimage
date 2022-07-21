@@ -25,9 +25,11 @@ function startMining(
     ) {
       const comm = getCommitment(curX, curY, blockhash);
 
-      console.log(`commitment for (${curX},${curY}): ${comm}`);
-
-      // TODO: send this to the game manager
+      postMessage({
+        type: "mined",
+        coords: { x: curX, y: curY },
+        commitment: comm,
+      });
     }
 
     let relX = curX - startPos.x;

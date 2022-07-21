@@ -96,7 +96,6 @@ export default function Game() {
     <>
       {gameManager && tiles ? (
         <>
-          <p>{JSON.stringify(minedCoords.value)}</p>
           <div style={{ width: '100%', height: '100%' }}>
             {tiles.map((coordRow, i) => {
               return (

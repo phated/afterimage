@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import type { Opaque } from 'type-fest';
+import BigInt, { BigInteger } from 'big-integer';
 
 import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
 
@@ -179,6 +180,6 @@ export function address(str: string): EthAddress {
   return `0x${ret}` as EthAddress;
 }
 
-export function getCommitment(x: number, y: number, blockhash: string) {
-  return mimcSponge([modPBigInt(x), modPBigInt(y), modPBigInt(Number(blockhash))], 1, 22, 123);
+export function getCommitment(x: number, y: number, blockhash: BigInteger, salt: number) {
+  return mimcSponge([BigInt(x), BigInt(y), blockhash, BigInt(salt)], 1, 220, 123)[0];
 }

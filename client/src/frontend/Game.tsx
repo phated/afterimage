@@ -185,8 +185,8 @@ const GridRow = styled.div`
 `;
 
 const GridSquare = styled.div`
-  width: 22px;
-  height: 22px;
+  width: 50px;
+  height: 50px;
   border-color: rgba(0, 0, 0, 0.15);
   border-style: solid;
   border-width: 1px;

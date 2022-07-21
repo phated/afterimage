@@ -184,12 +184,31 @@ class GameManager extends EventEmitter {
     return gameManager;
   }
 
-  public startMining(startPos: WorldCoords, blockhash: String) {
+  public async processMine(
+    x: number,
+    y: number,
+    blockhash: BigInteger,
+    salt: number,
+    commitment: BigInteger
+  ) {
+    console.log('got mine in GM', x, y, blockhash, salt, commitment);
+  }
+
+  public async startMining(x: number, y: number) {
+    const provider = this.ethConnection.getProvider();
+    const latestBlockNumber = await provider.getBlockNumber();
+    const possibleHashes = [];
+    for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
+      const block = await provider.getBlock(i);
+      possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
+    }
     this.minerManager.startMining(
       this.GRID_UPPER_BOUND,
-      startPos,
-      blockhash,
-      (c1, c2) => {}
+      10,
+      x,
+      y,
+      possibleHashes,
+      this.processMine.bind(this)
     );
   }
 

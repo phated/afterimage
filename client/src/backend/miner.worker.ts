@@ -1,5 +1,5 @@
-import { getCommitment, WorldCoords } from "../utils";
-import BigInt, { BigInteger } from "big-integer";
+import { getCommitment, WorldCoords } from '../utils';
+import BigInt, { BigInteger } from 'big-integer';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ctx: Worker = self as any;
@@ -16,14 +16,14 @@ function startMining(
   let curY = 0;
   let dx = 0;
   let dy = -1;
-  for (var i = 0; i < gridUpperBound; i++) {
+  for (var i = 0; i < gridUpperBound / 2; i++) {
     if (
       -gridUpperBound / 2 < curX &&
       curX <= gridUpperBound / 2 &&
       -gridUpperBound / 2 < curY &&
       curY <= gridUpperBound / 2
     ) {
-      console.log("coorddd", curX, curY);
+      console.log('coorddd', curX, curY);
 
       const realX = curX + startX;
       const realY = curY + startY;
@@ -31,7 +31,7 @@ function startMining(
         for (var potSalt = 0; potSalt < saltUpperBound; potSalt++) {
           const commit = getCommitment(realX, realY, potBlockhash, potSalt);
           postMessage({
-            type: "mined",
+            type: 'mined',
             commitInfo: {
               x: realX,
               y: realY,
@@ -43,11 +43,7 @@ function startMining(
         }
       }
     }
-    if (
-      curX == curY ||
-      (curX < 0 && curX == -curY) ||
-      (curX > 0 && curX == 1 - curY)
-    ) {
+    if (curX == curY || (curX < 0 && curX == -curY) || (curX > 0 && curX == 1 - curY)) {
       let temp = dx;
       dx = -dy;
       dy = temp;
@@ -57,9 +53,9 @@ function startMining(
   }
 }
 
-ctx.addEventListener("message", (e: MessageEvent) => {
+ctx.addEventListener('message', (e: MessageEvent) => {
   switch (e.data.type) {
-    case "start": {
+    case 'start': {
       console.log(e.data);
       startMining(
         e.data.gridUpperBound,

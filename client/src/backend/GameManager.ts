@@ -185,7 +185,12 @@ class GameManager extends EventEmitter {
   }
 
   public startMining(startPos: WorldCoords, blockhash: String) {
-    this.minerManager.startMining(this.GRID_UPPER_BOUND, startPos, blockhash);
+    this.minerManager.startMining(
+      this.GRID_UPPER_BOUND,
+      startPos,
+      blockhash,
+      (c1, c2) => {}
+    );
   }
 
   public stopMining() {

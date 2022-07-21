@@ -38,6 +38,10 @@ type CommitmentInfo = {
   address: EthAddress;
 };
 
+type OptimisticCommitmentInfo = CommitmentInfo & {
+  actionId: string;
+};
+
 type CommitmentMetadata = {
   address: EthAddress;
   blockNum: string;
@@ -76,6 +80,7 @@ class GameManager extends EventEmitter {
   private readonly snarkProverQueue: SnarkProverQueue;
 
   private selfInfo: CommitmentInfo;
+  private optimisticSelfInfo: OptimisticCommitmentInfo;
 
   private readonly GRID_UPPER_BOUND: number;
   private readonly SALT_UPPER_BOUND: number;
@@ -150,6 +155,10 @@ class GameManager extends EventEmitter {
             blockNum: blockNum.toString(),
           });
 
+          if (gameManager.optimisticSelfInfo.commitment === commitment.toString()) {
+            gameManager.selfInfo = gameManager.optimisticSelfInfo;
+          }
+
           if (!gameManager.account) {
             throw new Error('no account set');
           }
@@ -193,6 +202,9 @@ class GameManager extends EventEmitter {
     // pop up a little notification, clear the txIntent from memory
     // if it was being displayed in UI
     console.log(`txIntent failed with error ${e.message}`);
+    if (this.optimisticSelfInfo.actionId == txIntent.actionId) {
+      this.optimisticSelfInfo = { ...this.selfInfo, actionId: 'none' };
+    }
     console.log(txIntent);
   }
 
@@ -209,6 +221,9 @@ class GameManager extends EventEmitter {
     // pop up a little notification or log block explorer link
     // clear txIntent from memory if it was being displayed in UI
     console.log('reverted tx:');
+    if (this.optimisticSelfInfo.actionId == tx.actionId) {
+      this.optimisticSelfInfo = { ...this.selfInfo, actionId: 'none' };
+    }
     console.log(tx);
   }
 
@@ -258,7 +273,7 @@ class GameManager extends EventEmitter {
     };
   }
 
-  private async assembleInitSnarkInput(x: number, y: number) {
+  private async assembleInitSnarkInput(x: number, y: number, actionId: string) {
     const { latestBlockNumber, snarkInput } = await this.assembleNewLocationSnarkInput(x, y);
 
     console.log('snarkInp', snarkInput);
@@ -278,19 +293,20 @@ class GameManager extends EventEmitter {
 
     console.log('callArgs', callArgs);
 
-    this.selfInfo = {
+    this.optimisticSelfInfo = {
       x,
       y,
       blockhash: snarkInput.blockhash,
       salt: snarkInput.salt,
       commitment: snarkInput.commitment,
       address: this.account!,
+      actionId,
     };
 
     return callArgs;
   }
 
-  private async assembleMoveSnarkInput(x: number, y: number) {
+  private async assembleMoveSnarkInput(x: number, y: number, actionId: string) {
     const { latestBlockNumber, snarkInput } = await this.assembleNewLocationSnarkInput(x, y);
 
     const fullInput = {
@@ -326,13 +342,14 @@ class GameManager extends EventEmitter {
 
     console.log('callArgs', callArgs);
 
-    this.selfInfo = {
+    this.optimisticSelfInfo = {
       x,
       y,
       blockhash: snarkInput.blockhash,
       salt: snarkInput.salt,
       commitment: snarkInput.commitment,
       address: this.account!,
+      actionId,
     };
 
     return callArgs;
@@ -343,7 +360,7 @@ class GameManager extends EventEmitter {
     const txIntent: UnconfirmedInitPlayer = {
       actionId,
       methodName: ContractMethodName.INIT_PLAYER,
-      callArgs: this.assembleInitSnarkInput(x, y),
+      callArgs: this.assembleInitSnarkInput(x, y, actionId),
     };
     this.onTxIntent(txIntent);
     this.contractsAPI.initPlayer(txIntent).catch((err) => {
@@ -356,7 +373,7 @@ class GameManager extends EventEmitter {
     const txIntent: UnconfirmedMovePlayer = {
       actionId,
       methodName: ContractMethodName.MOVE_PLAYER,
-      callArgs: this.assembleMoveSnarkInput(x, y),
+      callArgs: this.assembleMoveSnarkInput(x, y, actionId),
     };
     this.onTxIntent(txIntent);
     this.contractsAPI.movePlayer(txIntent).catch((err) => {

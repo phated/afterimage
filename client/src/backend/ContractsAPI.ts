@@ -57,8 +57,6 @@ export class ContractsAPI extends EventEmitter {
    */
   private ethConnection: EthConnection;
 
-  private abiCache: Map<string, any[]>;
-
   get coreContract() {
     return this.ethConnection.getContract<ZKGame>(CONTRACT_ADDRESS);
   }
@@ -74,7 +72,6 @@ export class ContractsAPI extends EventEmitter {
       this.beforeTransaction.bind(this),
       this.afterTransaction.bind(this)
     );
-    this.abiCache = new Map();
 
     this.setupEventListeners();
   }

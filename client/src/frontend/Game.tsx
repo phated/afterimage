@@ -57,6 +57,12 @@ export default function Game() {
       });
   }, []);
 
+  useEffect(() => {
+    if (gameManager) {
+      gameManager.emitMine();
+    }
+  }, [gameManager]);
+
   const onGridClick = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
     coords: WorldCoords
@@ -80,7 +86,12 @@ export default function Game() {
                       tile.tileType == TileKnowledge.KNOWN ? MINED_COLOR : UNMINED_COLOR;
 
                     let style = { backgroundColor: color, backgroundImage: '' };
-                    if (selfLoc.value!.x == tile.coords.x && selfLoc.value!.y == tile.coords.y) {
+                    // console.log('selfLoc', selfLoc.value);
+                    if (
+                      selfLoc.value &&
+                      selfLoc.value!.x == tile.coords.x &&
+                      selfLoc.value!.y == tile.coords.y
+                    ) {
                       style.backgroundImage = `url('./fremen.png')`;
                     }
 

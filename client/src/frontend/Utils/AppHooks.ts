@@ -26,18 +26,19 @@ export function useTiles(gameManager: GameManager | undefined): Wrapper<Tile[][]
 export function useSelfLoc(
   gameManager: GameManager | undefined
 ): Wrapper<CommitmentInfo | undefined> {
-  const [tiles, setTiles] = useState<Wrapper<CommitmentInfo | undefined>>(
+  const [selfLoc, setSelfLoc] = useState<Wrapper<CommitmentInfo | undefined>>(
     () => new Wrapper(gameManager ? gameManager.getSelfLoc() : undefined)
   );
 
   const onUpdate = useCallback(() => {
     console.log('onUpdate');
-    setTiles(new Wrapper(gameManager ? gameManager.getSelfLoc() : undefined));
+    setSelfLoc(new Wrapper(gameManager ? gameManager.getSelfLoc() : undefined));
   }, [gameManager]);
 
   useEmitterSubscribe(gameManager?.minedTilesUpdated$, onUpdate);
+  useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
 
-  return tiles;
+  return selfLoc;
 }
 
 // /**

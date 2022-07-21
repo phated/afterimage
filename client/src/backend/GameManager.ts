@@ -460,7 +460,12 @@ class GameManager extends EventEmitter {
   }
 
   public getSelfLoc() {
+    // console.log('selfLoc', this.selfInfo);
     return this.selfInfo;
+  }
+
+  public emitMine() {
+    this.minedTilesUpdated$.publish();
   }
 }
 

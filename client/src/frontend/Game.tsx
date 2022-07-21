@@ -4,7 +4,6 @@ import tinycolor from 'tinycolor2';
 import GameManager from '../backend/GameManager';
 import { DEV_TEST_PRIVATE_KEY, Tile, TileType, WorldCoords } from '../utils';
 import { tileTypeToColor } from '../utils';
-import { TransformWrapper, TransformComponent } from '@pronestor/react-zoom-pan-pinch';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
 import { EthConnection } from '@darkforest_eth/network';
 import { getEthConnection } from '../backend/Blockchain';

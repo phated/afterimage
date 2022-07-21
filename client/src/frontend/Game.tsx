@@ -17,10 +17,6 @@ const enum LoadingStep {
   LOADED_PLUGIN_MANAGER,
 }
 
-function dist(a: WorldCoords, b: WorldCoords) {
-  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
-}
-
 function buildTiles(gridUpperBound: number) {
   console.log(`grid upper bound: ${gridUpperBound}`);
   const tiles: Tile[][] = [];
@@ -96,7 +92,7 @@ export default function Game() {
     <>
       {gameManager && tiles ? (
         <>
-          <div style={{ width: '100%', height: '100%' }}>
+          <FullScreen>
             {tiles.map((coordRow, i) => {
               return (
                 <GridRow key={i}>
@@ -128,7 +124,7 @@ export default function Game() {
                 </GridRow>
               );
             })}
-          </div>
+          </FullScreen>
         </>
       ) : (
         <FullScreen>
@@ -167,12 +163,12 @@ const Page = styled.div`
 const GridRow = styled.div`
   display: flex;
   flex-direction: row;
+  height: 30px;
   width: 100%;
-  height: 100%;
 `;
 
 const GridSquare = styled.div`
-  width: 100%;
+  width: 30px;
   height: 100%;
   border-color: rgba(0, 0, 0, 0.15);
   border-style: solid;

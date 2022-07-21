@@ -2,8 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import tinycolor from 'tinycolor2';
 import GameManager from '../backend/GameManager';
-import { DEV_TEST_PRIVATE_KEY, Tile, TileType, WorldCoords } from '../utils';
-import { tileTypeToColor } from '../utils';
+import {
+  DEV_TEST_PRIVATE_KEY,
+  MINED_COLOR,
+  Tile,
+  TileType,
+  UNMINED_COLOR,
+  WorldCoords,
+} from '../utils';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
 import { EthConnection } from '@darkforest_eth/network';
 import { getEthConnection } from '../backend/Blockchain';
@@ -97,26 +103,18 @@ export default function Game() {
               return (
                 <GridRow key={i}>
                   {coordRow.map((tile, j) => {
-                    const baseColor = tinycolor(tileTypeToColor[tile.tileType]);
+                    // set color based on mining (and other things eventually)
+                    const color = tile.tileType == TileType.FARM ? MINED_COLOR : UNMINED_COLOR;
 
-                    let color;
-
-                    // TODO: add mining stuff
-                    if (
-                      (curPosition.x == tile.coords.x && curPosition.y == tile.coords.y) ||
-                      tile.tileType == TileType.FARM
-                    ) {
-                      color = baseColor.clone();
-                    } else {
-                      color = baseColor.clone().desaturate(100);
+                    let style = { backgroundColor: color, backgroundImage: '' };
+                    if (curPosition.x == tile.coords.x && curPosition.y == tile.coords.y) {
+                      style.backgroundImage = `url('./fremen.png')`;
                     }
 
                     return (
                       <GridSquare
                         key={100 * i + j}
-                        style={{
-                          backgroundColor: color.toHexString(),
-                        }}
+                        style={style}
                         onContextMenu={(event) => onGridClick(event, { x: i, y: j })}
                       />
                     );

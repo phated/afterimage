@@ -4,14 +4,10 @@ import type { Opaque } from 'type-fest';
 import BigInt, { BigInteger } from 'big-integer';
 
 import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
+import tinycolor from 'tinycolor2';
 
-export const tileTypeToColor: { [key: number]: string } = {
-  0: '#ffac17',
-  1: '#ffb83f',
-  2: '#f27100',
-  3: '#ffae5d',
-  4: '#ff9915',
-};
+export const MINED_COLOR = '#f27100';
+export const UNMINED_COLOR = tinycolor('#797979').desaturate(100).toHexString();
 
 // NOTE: eventually defined based on player/contract seed, perlin noise (for tile type) etc.
 export function buildMap(width: number = 100, height: number = 100) {

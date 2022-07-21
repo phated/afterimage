@@ -1,14 +1,13 @@
 import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
-import type { Opaque } from 'type-fest';
+import { EthAddress } from '@darkforest_eth/types';
+import BigInt, { BigInteger } from 'big-integer';
 
-export const tileTypeToColor: { [key: number]: string } = {
-  0: "#ffac17",
-  1: "#ffb83f",
-  2: "#f27100",
-  3: "#ffae5d",
-  4: "#ff9915",
-};
+import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
+import tinycolor from 'tinycolor2';
+
+export const MINED_COLOR = '#f27100';
+export const UNMINED_COLOR = tinycolor('#797979').desaturate(100).toHexString();
 
 // NOTE: eventually defined based on player/contract seed, perlin noise (for tile type) etc.
 export function buildMap(width: number = 100, height: number = 100) {
@@ -23,7 +22,6 @@ export function buildMap(width: number = 100, height: number = 100) {
   }
   return rows;
 }
-
 
 export const getRandomActionId = () => {
   const hex = '0123456789abcdef';
@@ -83,37 +81,10 @@ export const DEV_TEST_PRIVATE_KEY = [
   '0x67195c963ff445314e667112ab22f4a7404bad7f9746564eb409b9bb8c6aed32', //
 ];
 
-
-export enum TileType {
+export enum TileKnowledge {
   UNKNOWN,
-  WATER,
-  SAND,
-  TREE,
-  STUMP,
-  CHEST,
-  FARM,
-  WINDMILL,
-  GRASS,
-  SNOW,
-  STONE,
-  ICE,
-  MAX = ICE,
-}
-
-export enum TemperatureType {
-  COLD,
-  NORMAL,
-  HOT,
-  MAX = HOT,
-}
-
-export enum AltitudeType {
-  SEA,
-  BEACH,
-  LAND,
-  MOUNTAIN,
-  MOUNTAINTOP,
-  MAX = MOUNTAINTOP,
+  KNOWN,
+  MAX = KNOWN,
 }
 
 export type WorldCoords = {
@@ -139,14 +110,8 @@ export type TileContractMetaData = {
 
 export type Tile = {
   coords: WorldCoords;
-  perlin: [number, number];
-  raritySeed: number;
-  tileType: TileType;
-  temperatureType: TemperatureType;
-  altitudeType: AltitudeType;
-  owner: EthAddress;
-  smartContract: EthAddress;
-  smartContractMetaData: TileContractMetaData;
+  tileType: TileKnowledge;
+  metas: CommitmentMetadata[];
 };
 
 export type PlayerInfo = {
@@ -160,20 +125,13 @@ export type PlayerInfo = {
 };
 
 /**
-* This is expected to be a 40-character, lowercase hex string, prefixed with 0x
-* (so 42 characters in total). EthAddress should only ever be instantiated
-* through the `address` function in `serde`.
-*/
-export type EthAddress = Opaque<string, 'EthAddress'>;
-
-/**
-* Converts a string to an `EthAddress`: a 0x-prefixed all lowercase hex string
-* of 40 hex characters. An object of the `EthAddress` type should only ever be
-* initialized through this constructor-like method. Throws if the provided
-* string cannot be parsed as an Ethereum address.
-*
-* @param str An address-like `string`
-*/
+ * Converts a string to an `EthAddress`: a 0x-prefixed all lowercase hex string
+ * of 40 hex characters. An object of the `EthAddress` type should only ever be
+ * initialized through this constructor-like method. Throws if the provided
+ * string cannot be parsed as an Ethereum address.
+ *
+ * @param str An address-like `string`
+ */
 export function address(str: string): EthAddress {
   let ret = str.toLowerCase();
   if (ret.slice(0, 2) === '0x') {
@@ -185,3 +143,30 @@ export function address(str: string): EthAddress {
   if (ret.length !== 40) throw new Error('not a valid address');
   return `0x${ret}` as EthAddress;
 }
+
+export function getCommitment(x: number, y: number, blockhash: BigInteger, salt: number) {
+  return mimcSponge([BigInt(x), BigInt(y), blockhash, BigInt(salt)], 1, 220, 123)[0];
+}
+
+export type RawCommitment = {
+  x: number;
+  y: number;
+  blockhash: string;
+  salt: string;
+  commitment: string;
+};
+
+export type CommitmentInfo = RawCommitment & {
+  address: EthAddress;
+};
+
+export type OptimisticCommitmentInfo = CommitmentInfo & {
+  actionId: string;
+};
+
+export type CommitmentMetadata = {
+  commitment: string;
+  address: EthAddress;
+  blockNum: string;
+  isCurrent: boolean;
+};

@@ -1,13 +1,6 @@
-import {
-  CONTRACT_ADDRESS
-} from '@zkgame/contracts';
-import {
-  Transaction,
-  TxIntent,
-} from "@darkforest_eth/types";
-import {
-  address,
-} from '../utils';
+import { CONTRACT_ADDRESS } from '@zkgame/contracts';
+import { Transaction, TxIntent } from '@darkforest_eth/types';
+import { address } from '../utils';
 import type { ZKGame } from '@zkgame/typechain';
 import {
   ContractCaller,
@@ -18,6 +11,7 @@ import {
 } from '@darkforest_eth/network';
 import { EventEmitter } from 'events';
 import {
+  BigNumber,
   BigNumber as EthersBN,
   Contract,
   ContractFunction /*, ethers, Event, providers*/,
@@ -33,9 +27,7 @@ import {
   UnconfirmedInitPlayer,
   UnconfirmedMovePlayer,
 } from '../_types/ContractAPITypes';
-import {
-  loadCoreContract,
-} from './Blockchain';
+import { loadCoreContract } from './Blockchain';
 
 /**
  * Roughly contains methods that map 1:1 with functions that live in the contract. Responsible for
@@ -65,8 +57,6 @@ export class ContractsAPI extends EventEmitter {
    */
   private ethConnection: EthConnection;
 
-  private abiCache: Map<string, any[]>;
-
   get coreContract() {
     return this.ethConnection.getContract<ZKGame>(CONTRACT_ADDRESS);
   }
@@ -82,12 +72,11 @@ export class ContractsAPI extends EventEmitter {
       this.beforeTransaction.bind(this),
       this.afterTransaction.bind(this)
     );
-    this.abiCache = new Map();
 
     this.setupEventListeners();
   }
 
-    /**
+  /**
    * We pass this function into {@link TxExecutor} to calculate what gas fee we should use for the
    * given transaction. The result is either a number, measured in gwei, represented as a string, or
    * a string representing that we want to use an auto gas setting.
@@ -131,7 +120,6 @@ export class ContractsAPI extends EventEmitter {
     this.emit(ContractsAPIEvent.TxSubmitted, txDiagnosticInfo);
   }
 
-
   public destroy(): void {
     this.removeEventListeners();
   }
@@ -146,15 +134,24 @@ export class ContractsAPI extends EventEmitter {
     const filter = {
       address: coreContract.address,
       topics: [
-        [
-          coreContract.filters.PlayerUpdated(null, null).topics,
-        ].map((topicsOrUndefined) => (topicsOrUndefined || [])[0]),
+        [coreContract.filters.PlayerUpdated(null, null).topics].map(
+          (topicsOrUndefined) => (topicsOrUndefined || [])[0]
+        ),
       ] as Array<string | Array<string>>,
     };
 
     const eventHandlers = {
-      [ContractEvent.PlayerUpdated]: (rawAddress: string, commitment: number) => {
-        this.emit(ContractsAPIEvent.PlayerUpdated, address(rawAddress), commitment);
+      [ContractEvent.PlayerUpdated]: (
+        rawAddress: string,
+        commitment: BigNumber,
+        blockNum: BigNumber
+      ) => {
+        this.emit(
+          ContractsAPIEvent.PlayerUpdated,
+          address(rawAddress),
+          commitment.toBigInt(),
+          blockNum.toBigInt()
+        );
       },
     };
 
@@ -170,6 +167,48 @@ export class ContractsAPI extends EventEmitter {
 
   public async getGridUpperBound(): Promise<number> {
     return (await this.makeCall<EthersBN>(this.coreContract.GRID_UPPER_BOUND)).toNumber();
+  }
+
+  public async getSaltUpperBound(): Promise<number> {
+    return (await this.makeCall<EthersBN>(this.coreContract.SALT_UPPER_BOUND)).toNumber();
+  }
+
+  public async initPlayer(action: UnconfirmedInitPlayer) {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const tx = await this.txExecutor.queueTransaction({
+      contract: this.coreContract,
+      methodName: action.methodName,
+      args: action.callArgs,
+    });
+    const unminedInitPlayerTx: SubmittedInitPlayer = {
+      ...action,
+      txHash: (await tx.submittedPromise).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedInitPlayerTx, tx.confirmedPromise);
+  }
+
+  public async movePlayer(action: UnconfirmedMovePlayer) {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const tx = await this.txExecutor.queueTransaction({
+      contract: this.coreContract,
+      methodName: action.methodName,
+      args: action.callArgs,
+    });
+    const unminedMovePlayerTx: SubmittedMovePlayer = {
+      ...action,
+      txHash: (await tx.submittedPromise).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedMovePlayerTx, tx.confirmedPromise);
   }
 
   /**

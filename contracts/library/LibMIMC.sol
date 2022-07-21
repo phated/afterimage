@@ -228,14 +228,19 @@ library LibMIMC {
         return roundConstants;
     }
 
-    uint256 constant p = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    uint256 constant p =
+        21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
     struct FeistelState {
         uint256 l;
         uint256 r;
     }
 
-    function inject(FeistelState memory state, uint256 inp) internal pure returns (FeistelState memory) {
+    function inject(FeistelState memory state, uint256 inp)
+        internal
+        pure
+        returns (FeistelState memory)
+    {
         uint256 newL = addmod(state.l, inp, p);
         state.l = newL;
         return state;
@@ -243,15 +248,20 @@ library LibMIMC {
 
     function modPow(uint256 val, uint256 pow) internal pure returns (uint256) {
         uint256 res = 1;
-        for (uint256 i = 0;i < pow;i++) {
+        for (uint256 i = 0; i < pow; i++) {
             res = mulmod(res, val, p);
         }
         return res;
     }
 
-    function mix(FeistelState memory state, uint256 rounds, uint256 key, uint256[220] memory roundConstants) internal pure returns (FeistelState memory) {
+    function mix(
+        FeistelState memory state,
+        uint256 rounds,
+        uint256 key,
+        uint256[220] memory roundConstants
+    ) internal pure returns (FeistelState memory) {
         FeistelState memory currentState = FeistelState(state.l, state.r);
-        for (uint256 idx = 0;idx < rounds - 1;idx++) {
+        for (uint256 idx = 0; idx < rounds - 1; idx++) {
             uint256 t = addmod(addmod(key, currentState.l, p), roundConstants[idx], p);
             uint256 newL = addmod(modPow(t, 5), currentState.r, p);
             currentState.r = currentState.l;
@@ -262,17 +272,22 @@ library LibMIMC {
         return currentState;
     }
 
-    function mimcSponge(uint256[] memory inputs, uint256 outputCount, uint256 rounds, uint256 key) internal pure returns (uint256[] memory) {
-        uint256[220] memory roundConstants = getRoundConstants(); 
+    function mimcSponge(
+        uint256[] memory inputs,
+        uint256 outputCount,
+        uint256 rounds,
+        uint256 key
+    ) internal pure returns (uint256[] memory) {
+        uint256[220] memory roundConstants = getRoundConstants();
         FeistelState memory state = FeistelState(0, 0);
-        for (uint256 i = 0;i < inputs.length;i++) {
+        for (uint256 i = 0; i < inputs.length; i++) {
             state = inject(state, (inputs[i] % p));
             state = mix(state, rounds, key, roundConstants);
         }
 
         uint256[] memory outputs = new uint256[](outputCount);
         outputs[0] = state.l;
-        for (uint256 i = 0;i < outputCount - 1;i++) {
+        for (uint256 i = 0; i < outputCount - 1; i++) {
             state = mix(state, rounds, key, roundConstants);
             outputs[i + 1] = state.l;
         }

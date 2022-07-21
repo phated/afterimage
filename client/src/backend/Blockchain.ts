@@ -1,7 +1,5 @@
-import ZKGameContractAbi from '@zkgame/contracts/ZKGame.json'
-import type {
-  ZKGame
-} from '@zkgame/typechain';
+import ZKGameContractAbi from '@zkgame/contracts/ZKGame.json';
+import type { ZKGame } from '@zkgame/typechain';
 import { createContract, createEthConnection, EthConnection } from '@darkforest_eth/network';
 import type { providers, Wallet } from 'ethers';
 

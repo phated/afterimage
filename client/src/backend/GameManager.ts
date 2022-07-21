@@ -15,6 +15,29 @@ import {
 } from '../_types/ContractAPITypes';
 import { hexValue } from 'ethers/lib/utils';
 import { BigNumber } from 'ethers';
+import {
+  SnarkProverQueue,
+  InitSnarkInput,
+  SnarkJSProofAndSignals,
+  buildContractCallArgs,
+} from './SnarkManager';
+import { mimcHash, mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
+import BigInt, { BigInteger } from 'big-integer';
+import initCircuitPath from '@zkgame/snarks/init.wasm';
+import initCircuitZkey from '@zkgame/snarks/init.zkey';
+import moveCircuitPath from '@zkgame/snarks/move.wasm';
+import moveCircuitZkey from '@zkgame/snarks/move.zkey';
+import {
+  address,
+  getRandomActionId,
+  RawCommitment,
+  Tile,
+  TileKnowledge,
+  CommitmentInfo,
+  OptimisticCommitmentInfo,
+  CommitmentMetadata,
+} from '../utils';
+import { MinerManager } from './Miner';
 
 class GameManager extends EventEmitter {
   /**
@@ -46,23 +69,52 @@ class GameManager extends EventEmitter {
    * address and balance, etc.
    */
   private readonly ethConnection: EthConnection;
+  private readonly snarkProverQueue: SnarkProverQueue;
+
+  private selfInfo: CommitmentInfo;
+  private optimisticSelfInfo: OptimisticCommitmentInfo;
 
   private readonly GRID_UPPER_BOUND: number;
+  private readonly SALT_UPPER_BOUND: number;
   public playerUpdated$: Monomitter<void>;
+  public minedTilesUpdated$: Monomitter<void>;
+
+  public addressToLatestCommitment: Map<EthAddress, string>;
+  public commitmentToMetadata: Map<string, CommitmentMetadata>;
+  public commitmentToMinedCommitment: Map<string, RawCommitment>;
+  public minerManager: MinerManager;
+  private tiles: Tile[][];
 
   private constructor(
     account: EthAddress | undefined,
     ethConnection: EthConnection,
+    snarkProverQueue: SnarkProverQueue,
     contractsAPI: ContractsAPI,
     GRID_UPPER_BOUND: number,
+    SALT_UPPER_BOUND: number
   ) {
     super();
 
     this.account = account;
     this.ethConnection = ethConnection;
+    this.snarkProverQueue = snarkProverQueue;
     this.contractsAPI = contractsAPI;
     this.GRID_UPPER_BOUND = GRID_UPPER_BOUND;
+    this.SALT_UPPER_BOUND = SALT_UPPER_BOUND;
     this.playerUpdated$ = monomitter();
+    this.minedTilesUpdated$ = monomitter();
+    this.tiles = [];
+    for (let i = 0; i < GRID_UPPER_BOUND; i++) {
+      const row = [];
+      for (let j = 0; j < GRID_UPPER_BOUND; j++) {
+        row.push({ coords: { x: i, y: j }, tileType: TileKnowledge.UNKNOWN, metas: [] });
+      }
+      this.tiles.push(row);
+    }
+    this.addressToLatestCommitment = new Map();
+    this.commitmentToMetadata = new Map();
+    this.commitmentToMinedCommitment = new Map();
+    this.minerManager = MinerManager.create(GRID_UPPER_BOUND);
   }
 
   static async create(ethConnection: EthConnection) {
@@ -74,11 +126,15 @@ class GameManager extends EventEmitter {
 
     const contractsAPI = await makeContractsAPI(ethConnection);
     const GRID_UPPER_BOUND = await contractsAPI.getGridUpperBound();
+    const SALT_UPPER_BOUND = await contractsAPI.getSaltUpperBound();
+    const snarkProverQueue = new SnarkProverQueue();
     const gameManager = new GameManager(
       account,
       ethConnection,
+      snarkProverQueue,
       contractsAPI,
       GRID_UPPER_BOUND,
+      SALT_UPPER_BOUND
     );
 
     // important that this happens AFTER we load the game state from the blockchain. Otherwise our
@@ -90,17 +146,49 @@ class GameManager extends EventEmitter {
     // do some logic
     // also, handle state updates for locally-initialized txIntents
     gameManager.contractsAPI
-      .on(ContractsAPIEvent.PlayerUpdated, async (moverAddr: EthAddress, coords: WorldCoords) => {
-        // todo: update in memory data store
-        // todo: emit event to UI
-        // TODO: do something???
-        console.log('event player', coords);
+      .on(
+        ContractsAPIEvent.PlayerUpdated,
+        async (moverAddr: EthAddress, commitment: BigInt, blockNum: BigInt) => {
+          // todo: update in memory data store
+          // todo: emit event to UI
+          // TODO: do something???
+          console.log('event player', moverAddr, commitment);
 
-        if (!gameManager.account) {
-          throw new Error('no account set');
+          // reset previous one
+          const prevCommitment = gameManager.addressToLatestCommitment.get(moverAddr);
+          if (prevCommitment) {
+            const oldMetaData = gameManager.commitmentToMetadata.get(prevCommitment)!;
+            oldMetaData.isCurrent = false;
+            gameManager.commitmentToMetadata.set(prevCommitment, oldMetaData);
+          }
+
+          gameManager.addressToLatestCommitment.set(moverAddr, commitment.toString());
+          gameManager.commitmentToMetadata.set(commitment.toString(), {
+            commitment: commitment.toString(),
+            address: moverAddr,
+            blockNum: blockNum.toString(),
+            isCurrent: true,
+          });
+
+          if (gameManager.commitmentToMinedCommitment.get(commitment.toString())) {
+            const commit = gameManager.commitmentToMinedCommitment.get(commitment.toString())!;
+            gameManager.tiles[commit.x][commit.y].tileType = TileKnowledge.KNOWN;
+            if (gameManager.commitmentToMetadata.get(commit.commitment) !== undefined) {
+              const meta = gameManager.commitmentToMetadata.get(commit.commitment)!;
+              gameManager.tiles[commit.x][commit.y].metas.push(meta);
+            }
+          }
+
+          if (gameManager.optimisticSelfInfo.commitment === commitment.toString()) {
+            gameManager.selfInfo = gameManager.optimisticSelfInfo;
+          }
+
+          if (!gameManager.account) {
+            throw new Error('no account set');
+          }
+          gameManager.playerUpdated$.publish();
         }
-        gameManager.playerUpdated$.publish();
-      })
+      )
       .on(ContractsAPIEvent.TxSubmitted, (unconfirmedTx: SubmittedTx) => {
         // todo: save the tx to localstorage
         gameManager.onTxSubmit(unconfirmedTx);
@@ -115,6 +203,46 @@ class GameManager extends EventEmitter {
       });
 
     return gameManager;
+  }
+
+  public processMine(commits: RawCommitment[]) {
+    for (const commit of commits) {
+      this.commitmentToMinedCommitment.set(commit.commitment, {
+        x: commit.x,
+        y: commit.y,
+        blockhash: commit.blockhash,
+        salt: commit.salt.toString(),
+        commitment: commit.commitment,
+      });
+      this.tiles[commit.x][commit.y].tileType = TileKnowledge.KNOWN;
+      if (this.commitmentToMetadata.get(commit.commitment) !== undefined) {
+        const meta = this.commitmentToMetadata.get(commit.commitment)!;
+        this.tiles[commit.x][commit.y].metas.push(meta);
+      }
+    }
+    this.minedTilesUpdated$.publish();
+  }
+
+  public async startMining(x: number, y: number) {
+    const provider = this.ethConnection.getProvider();
+    const latestBlockNumber = await provider.getBlockNumber();
+    const possibleHashes = [];
+    for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
+      const block = await provider.getBlock(i);
+      possibleHashes.push(block.hash);
+    }
+    this.minerManager.startMining(
+      this.GRID_UPPER_BOUND,
+      this.SALT_UPPER_BOUND,
+      x,
+      y,
+      possibleHashes,
+      this.processMine.bind(this)
+    );
+  }
+
+  public stopMining() {
+    this.minerManager.stopMining();
   }
 
   private onTxIntent(txIntent: TxIntent): void {
@@ -138,6 +266,9 @@ class GameManager extends EventEmitter {
     // pop up a little notification, clear the txIntent from memory
     // if it was being displayed in UI
     console.log(`txIntent failed with error ${e.message}`);
+    if (this.optimisticSelfInfo.actionId == txIntent.actionId) {
+      this.optimisticSelfInfo = { ...this.selfInfo, actionId: 'none' };
+    }
     console.log(txIntent);
   }
 
@@ -154,11 +285,187 @@ class GameManager extends EventEmitter {
     // pop up a little notification or log block explorer link
     // clear txIntent from memory if it was being displayed in UI
     console.log('reverted tx:');
+    if (this.optimisticSelfInfo.actionId == tx.actionId) {
+      this.optimisticSelfInfo = { ...this.selfInfo, actionId: 'none' };
+    }
     console.log(tx);
   }
 
   getGridUpperBound(): number {
     return this.GRID_UPPER_BOUND;
+  }
+
+  getSaltUpperBound(): number {
+    return this.SALT_UPPER_BOUND;
+  }
+
+  private async assembleNewLocationSnarkInput(x: number, y: number) {
+    const provider = this.ethConnection.getProvider();
+    const latestBlockNumber = await provider.getBlockNumber();
+    const possibleHashes = [];
+    for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
+      const block = await provider.getBlock(i);
+      possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
+    }
+
+    const possibleHashesHash = mimcSponge(possibleHashes, 1, 22, 123)[0];
+    console.log('possibleHashesHash:', possibleHashesHash);
+    const blockhash = possibleHashes[Math.floor(Math.random() * possibleHashes.length)];
+
+    const salt = Math.floor(Math.random() * this.SALT_UPPER_BOUND);
+
+    const commitment = mimcSponge(
+      [BigInt(x), BigInt(y), BigInt(blockhash), BigInt(salt)],
+      1,
+      220,
+      123
+    )[0];
+
+    return {
+      latestBlockNumber,
+      snarkInput: {
+        x: x.toString(),
+        y: y.toString(),
+        possibleHashes: possibleHashes.map((x) => x.toString()),
+        possibleHashesHash: possibleHashesHash.toString(),
+        blockhash: blockhash.toString(),
+        salt: salt.toString(),
+        saltUpperBound: this.SALT_UPPER_BOUND.toString(),
+        gridUpperBound: this.GRID_UPPER_BOUND.toString(),
+        commitment: commitment.toString(),
+      },
+    };
+  }
+
+  private async assembleInitSnarkInput(x: number, y: number, actionId: string) {
+    const { latestBlockNumber, snarkInput } = await this.assembleNewLocationSnarkInput(x, y);
+
+    console.log('snarkInp', snarkInput);
+
+    const proofAndSignalData = await this.snarkProverQueue.doProof(
+      snarkInput,
+      initCircuitPath,
+      initCircuitZkey
+    );
+
+    const callArgs = buildContractCallArgs(
+      (latestBlockNumber - 31).toString(),
+      latestBlockNumber.toString(),
+      proofAndSignalData.proof,
+      proofAndSignalData.publicSignals
+    );
+
+    console.log('callArgs', callArgs);
+
+    this.optimisticSelfInfo = {
+      x,
+      y,
+      blockhash: snarkInput.blockhash,
+      salt: snarkInput.salt,
+      commitment: snarkInput.commitment,
+      address: this.account!,
+      actionId,
+    };
+
+    return callArgs;
+  }
+
+  private async assembleMoveSnarkInput(x: number, y: number, actionId: string) {
+    const { latestBlockNumber, snarkInput } = await this.assembleNewLocationSnarkInput(x, y);
+
+    const fullInput = {
+      oldX: this.selfInfo.x.toString(),
+      oldY: this.selfInfo.y.toString(),
+      oldBlockhash: this.selfInfo.blockhash,
+      oldSalt: this.selfInfo.salt,
+      oldCommitment: this.selfInfo.commitment,
+      newX: snarkInput.x,
+      newY: snarkInput.y,
+      newBlockhash: snarkInput.blockhash,
+      newSalt: snarkInput.salt,
+      newCommitment: snarkInput.commitment,
+      possibleHashes: snarkInput.possibleHashes,
+      possibleHashesHash: snarkInput.possibleHashesHash,
+      saltUpperBound: snarkInput.saltUpperBound,
+      gridUpperBound: snarkInput.gridUpperBound,
+    };
+    console.log('fullInput', fullInput);
+
+    const proofAndSignalData = await this.snarkProverQueue.doProof(
+      fullInput,
+      moveCircuitPath,
+      moveCircuitZkey
+    );
+
+    const callArgs = buildContractCallArgs(
+      (latestBlockNumber - 31).toString(),
+      latestBlockNumber.toString(),
+      proofAndSignalData.proof,
+      proofAndSignalData.publicSignals
+    );
+
+    console.log('callArgs', callArgs);
+
+    this.optimisticSelfInfo = {
+      x,
+      y,
+      blockhash: snarkInput.blockhash,
+      salt: snarkInput.salt,
+      commitment: snarkInput.commitment,
+      address: this.account!,
+      actionId,
+    };
+
+    return callArgs;
+  }
+
+  public async initPlayer(x: number, y: number) {
+    const actionId = getRandomActionId();
+    const txIntent: UnconfirmedInitPlayer = {
+      actionId,
+      methodName: ContractMethodName.INIT_PLAYER,
+      callArgs: this.assembleInitSnarkInput(x, y, actionId),
+    };
+    this.onTxIntent(txIntent);
+    this.contractsAPI.initPlayer(txIntent).catch((err) => {
+      this.onTxIntentFail(txIntent, err);
+    });
+  }
+
+  public async movePlayer(x: number, y: number) {
+    const actionId = getRandomActionId();
+    const txIntent: UnconfirmedMovePlayer = {
+      actionId,
+      methodName: ContractMethodName.MOVE_PLAYER,
+      callArgs: this.assembleMoveSnarkInput(x, y, actionId),
+    };
+    this.onTxIntent(txIntent);
+    this.contractsAPI.movePlayer(txIntent).catch((err) => {
+      this.onTxIntentFail(txIntent, err);
+    });
+  }
+
+  public getTiles() {
+    // tiles meta might be stale, refresh it
+    for (let i = 0; i < this.GRID_UPPER_BOUND; i++) {
+      for (let j = 0; j < this.GRID_UPPER_BOUND; j++) {
+        const newMetas: CommitmentMetadata[] = [];
+        for (const meta of this.tiles[i][j].metas) {
+          newMetas.push(this.commitmentToMetadata.get(meta.commitment)!);
+        }
+        this.tiles[i][j].metas = newMetas;
+      }
+    }
+    return this.tiles;
+  }
+
+  public getSelfLoc() {
+    // console.log('selfLoc', this.selfInfo);
+    return this.selfInfo;
+  }
+
+  public emitMine() {
+    this.minedTilesUpdated$.publish();
   }
 }
 

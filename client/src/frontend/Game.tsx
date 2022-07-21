@@ -2,23 +2,25 @@ import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import tinycolor from 'tinycolor2';
 import GameManager from '../backend/GameManager';
-import { DEV_TEST_PRIVATE_KEY, Tile, TileType, WorldCoords } from '../utils';
-import { tileTypeToColor } from '../utils';
-import { TransformWrapper, TransformComponent } from '@pronestor/react-zoom-pan-pinch';
+import {
+  DEV_TEST_PRIVATE_KEY,
+  Tile,
+  TileKnowledge,
+  WorldCoords,
+  MINED_COLOR,
+  UNMINED_COLOR,
+} from '../utils';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
 import { EthConnection } from '@darkforest_eth/network';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
+import { useSelfLoc, useTiles } from './Utils/AppHooks';
 
 const enum LoadingStep {
   NONE,
   LOADED_ETH_CONNECTION,
   LOADED_GAME_MANAGER,
   LOADED_PLUGIN_MANAGER,
-}
-
-function dist(a: WorldCoords, b: WorldCoords) {
-  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
 }
 
 export default function Game() {
@@ -29,16 +31,8 @@ export default function Game() {
   const [ethConnection, setEthConnection] = useState<EthConnection | undefined>();
   const [step, setStep] = useState(LoadingStep.NONE);
   const [error, setError] = useState('no errors');
-  const [tiles, setTiles] = useState<Tile[][]>([]);
-
-  const lightRadius = 10;
-  const center = { x: 50, y: 50 };
-
-  console.log('#9a8c7a', tinycolor('#9a8c7a').saturate(100).toHexString());
-  console.log('#b6aea6', tinycolor('#b6aea6').saturate(100).toHexString());
-  console.log('#897869', tinycolor('#897869').saturate(100).toHexString());
-  console.log('#baa684', tinycolor('#baa684').saturate(100).toHexString());
-  console.log('#ab946b', tinycolor('#ab946b').saturate(100).toHexString());
+  const tiles = useTiles(gameManager);
+  const selfLoc = useSelfLoc(gameManager);
 
   useEffect(() => {
     getEthConnection()
@@ -48,6 +42,8 @@ export default function Game() {
         setStep(LoadingStep.LOADED_ETH_CONNECTION);
         const gm = await GameManager.create(ethConnection);
         window.gm = gm;
+        // TODO: add back in after testing manually
+        // gm.startMining(curPosition);
         setGameManager(gm);
         setStep(LoadingStep.LOADED_GAME_MANAGER);
         const pm = new PluginManager(gameManager!);
@@ -61,6 +57,11 @@ export default function Game() {
       });
   }, []);
 
+  useEffect(() => {
+    if (gameManager) {
+      gameManager.emitMine();
+    }
+  }, [gameManager]);
 
   const onGridClick = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -68,80 +69,65 @@ export default function Game() {
   ) => {
     event.preventDefault();
     console.log('coords', coords);
-    console.log('tile', tiles[coords.x][coords.y]);
+    console.log('tile', tiles.value[coords.x][coords.y]);
   };
 
   return (
     <>
-      <Page>
-        {gameManager && tiles ? (
-          <>
-            <FullScreen>
-              <TransformWrapper initialScale={2}>
-                <TransformComponent
-                  wrapperStyle={{
-                    maxWidth: '100%',
-                    maxHeight: 'calc(100vh - 0.1px)',
-                  }}
-                >
-                  {tiles.map((coordRow, i) => {
-                    if (i == 0) return null;
+      {gameManager && tiles.value ? (
+        <>
+          <FullScreen>
+            {tiles.value.map((coordRow, i) => {
+              return (
+                <GridRow key={i}>
+                  {coordRow.map((tile, j) => {
+                    // set color based on mining (and other things eventually)
+                    const color =
+                      tile.tileType == TileKnowledge.KNOWN ? MINED_COLOR : UNMINED_COLOR;
+
+                    let style = { backgroundColor: color, backgroundImage: '' };
+                    // console.log('selfLoc', selfLoc.value);
+                    if (
+                      selfLoc.value &&
+                      selfLoc.value!.x == tile.coords.x &&
+                      selfLoc.value!.y == tile.coords.y
+                    ) {
+                      style.backgroundImage = `url('./fremen.png')`;
+                    }
+
                     return (
-                      <GridRow key={i}>
-                        {coordRow.map((tile, j) => {
-                          if (j == 0) return null;
-
-                          const baseColor = tinycolor(tileTypeToColor[tile.tileType]);
-
-                          let color = baseColor.clone();
-                          if (dist(center, { x: i, y: j }) > lightRadius) {
-                            color = baseColor.desaturate(100);
-                          } else {
-                            // TODO: simulate flicker/blocks falling behind
-                            const r = Math.random();
-                            if (r < 0.1) {
-                              color = baseColor.desaturate(r * 400);
-                            }
-                          }
-
-                          return (
-                            <GridSquare
-                              key={100 * i + j}
-                              style={{
-                                backgroundColor: color.toHexString(),
-                              }}
-                              onContextMenu={(event) => onGridClick(event, { x: i, y: j })}
-                            />
-                          );
-                        })}
-                      </GridRow>
+                      <GridSquare
+                        key={100 * i + j}
+                        style={style}
+                        onContextMenu={(event) => onGridClick(event, { x: i, y: j })}
+                      />
                     );
                   })}
-                </TransformComponent>
-              </TransformWrapper>
-            </FullScreen>
-          </>
-        ) : (
-          <FullScreen>
-            <Title>
-              <Text h1 size={96} color='secondary'>
-                defcon procgen workshop
-              </Text>
-            </Title>
-            <SubTitle>
-              <Text h2 size={64} color='secondary'>
-                Loading
-                <Loading type='points-opacity' size='lg' color='secondary' />
-              </Text>
-              {error != 'no errors' && (
-                <Text h2 size={64} color='secondary'>
-                  {error}
-                </Text>
-              )}
-            </SubTitle>
+                </GridRow>
+              );
+            })}
           </FullScreen>
-        )}
-      </Page>
+        </>
+      ) : (
+        <FullScreen>
+          <Title>
+            <Text h1 size={96} color='secondary'>
+              defcon procgen workshop
+            </Text>
+          </Title>
+          <SubTitle>
+            <Text h2 size={64} color='secondary'>
+              Loading
+              <Loading type='points-opacity' size='lg' color='secondary' />
+            </Text>
+            {error != 'no errors' && (
+              <Text h2 size={64} color='secondary'>
+                {error}
+              </Text>
+            )}
+          </SubTitle>
+        </FullScreen>
+      )}
     </>
   );
 }
@@ -152,16 +138,20 @@ const Page = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  height: 100%;
 `;
 
 const GridRow = styled.div`
   display: flex;
   flex-direction: row;
+  height: 30px;
+  width: 100%;
 `;
 
 const GridSquare = styled.div`
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 100%;
   border-color: rgba(0, 0, 0, 0.15);
   border-style: solid;
   border-width: 1px;

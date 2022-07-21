@@ -1,3 +1,4 @@
+import { ContractCallArgs } from '../backend/SnarkManager';
 import { WorldCoords } from '../utils';
 
 export const enum ContractEvent {
@@ -7,12 +8,10 @@ export const enum ContractEvent {
 
 export enum ContractMethodName {
   MOVE_PLAYER = 'movePlayer',
-  INIT_PLAYER_LOCATION = 'initPlayerLocation',
-  OWN_TILE = 'ownTile',
+  INIT_PLAYER = 'initPlayer',
 }
 
 export const enum ContractsAPIEvent {
-  TileUpdated = 'TileUpdated',
   PlayerUpdated = 'PlayerUpdated',
 
   TxInitFailed = 'TxInitFailed',
@@ -35,7 +34,7 @@ export type SubmittedTx = TxIntent & {
 
 export type UnconfirmedMovePlayer = TxIntent & {
   methodName: ContractMethodName.MOVE_PLAYER;
-  coords: WorldCoords;
+  callArgs: Promise<unknown[]>;
 };
 
 export type SubmittedMovePlayer = UnconfirmedMovePlayer & SubmittedTx;
@@ -45,12 +44,12 @@ export function isUnconfirmedMovePlayer(txIntent: TxIntent): txIntent is Unconfi
 }
 
 export type UnconfirmedInitPlayer = TxIntent & {
-  methodName: ContractMethodName.INIT_PLAYER_LOCATION;
-  emoji: string;
+  methodName: ContractMethodName.INIT_PLAYER;
+  callArgs: Promise<unknown[]>;
 };
 
 export type SubmittedInitPlayer = UnconfirmedInitPlayer & SubmittedTx;
 
 export function isUnconfirmedInitPlayer(txIntent: TxIntent): txIntent is UnconfirmedInitPlayer {
-  return ContractMethodName.INIT_PLAYER_LOCATION == txIntent.methodName;
+  return ContractMethodName.INIT_PLAYER == txIntent.methodName;
 }

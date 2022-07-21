@@ -1,9 +1,11 @@
-import ZKGameContractAbi from '@zkgame/contracts/ZKGame.json'
-import type {
-  ZKGame
-} from '@zkgame/typechain';
-import { createContract, createEthConnection, EthConnection } from '@darkforest_eth/network';
-import type { providers, Wallet } from 'ethers';
+import ZKGameContractAbi from "@zkgame/contracts/ZKGame.json";
+import type { ZKGame } from "@zkgame/typechain";
+import {
+  createContract,
+  createEthConnection,
+  EthConnection,
+} from "@darkforest_eth/network";
+import type { providers, Wallet } from "ethers";
 
 /**
  * Loads the Core game contract, which is responsible for updating the state of the game.
@@ -18,7 +20,7 @@ export async function loadCoreContract(
 }
 
 export function getEthConnection(): Promise<EthConnection> {
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === "production";
   const defaultUrl = process.env.DEFAULT_RPC as string;
 
   let url: string;
@@ -26,7 +28,7 @@ export function getEthConnection(): Promise<EthConnection> {
   if (isProd) {
     url = defaultUrl;
   } else {
-    url = 'http://localhost:8545';
+    url = "http://localhost:8545";
   }
 
   return createEthConnection(url);

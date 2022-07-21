@@ -1,9 +1,9 @@
-import { EthConnection } from '@darkforest_eth/network';
-import { monomitter, Monomitter, Subscription } from '@darkforest_eth/events';
-import { perlin } from '@darkforest_eth/hashing';
-import { EthAddress, WorldCoords } from '@darkforest_eth/types';
-import { EventEmitter } from 'events';
-import { ContractsAPI, makeContractsAPI } from './ContractsAPI';
+import { EthConnection } from "@darkforest_eth/network";
+import { monomitter, Monomitter, Subscription } from "@darkforest_eth/events";
+import { perlin } from "@darkforest_eth/hashing";
+import { EthAddress, WorldCoords } from "@darkforest_eth/types";
+import { EventEmitter } from "events";
+import { ContractsAPI, makeContractsAPI } from "./ContractsAPI";
 import {
   ContractMethodName,
   ContractsAPIEvent,
@@ -12,9 +12,10 @@ import {
   TxIntent,
   UnconfirmedMovePlayer,
   UnconfirmedInitPlayer,
-} from '../_types/ContractAPITypes';
-import { hexValue } from 'ethers/lib/utils';
-import { BigNumber } from 'ethers';
+} from "../_types/ContractAPITypes";
+import { hexValue } from "ethers/lib/utils";
+import { BigNumber } from "ethers";
+import { MinerManager } from "./Miner";
 
 class GameManager extends EventEmitter {
   /**
@@ -50,11 +51,13 @@ class GameManager extends EventEmitter {
   private readonly GRID_UPPER_BOUND: number;
   public playerUpdated$: Monomitter<void>;
 
+  public minerManager: MinerManager;
+
   private constructor(
     account: EthAddress | undefined,
     ethConnection: EthConnection,
     contractsAPI: ContractsAPI,
-    GRID_UPPER_BOUND: number,
+    GRID_UPPER_BOUND: number
   ) {
     super();
 
@@ -63,13 +66,14 @@ class GameManager extends EventEmitter {
     this.contractsAPI = contractsAPI;
     this.GRID_UPPER_BOUND = GRID_UPPER_BOUND;
     this.playerUpdated$ = monomitter();
+    this.minerManager = MinerManager.create(GRID_UPPER_BOUND);
   }
 
   static async create(ethConnection: EthConnection) {
     const account = ethConnection.getAddress();
 
     if (!account) {
-      throw new Error('no account on eth connection');
+      throw new Error("no account on eth connection");
     }
 
     const contractsAPI = await makeContractsAPI(ethConnection);
@@ -78,7 +82,7 @@ class GameManager extends EventEmitter {
       account,
       ethConnection,
       contractsAPI,
-      GRID_UPPER_BOUND,
+      GRID_UPPER_BOUND
     );
 
     // important that this happens AFTER we load the game state from the blockchain. Otherwise our
@@ -90,17 +94,20 @@ class GameManager extends EventEmitter {
     // do some logic
     // also, handle state updates for locally-initialized txIntents
     gameManager.contractsAPI
-      .on(ContractsAPIEvent.PlayerUpdated, async (moverAddr: EthAddress, coords: WorldCoords) => {
-        // todo: update in memory data store
-        // todo: emit event to UI
-        // TODO: do something???
-        console.log('event player', coords);
+      .on(
+        ContractsAPIEvent.PlayerUpdated,
+        async (moverAddr: EthAddress, coords: WorldCoords) => {
+          // todo: update in memory data store
+          // todo: emit event to UI
+          // TODO: do something???
+          console.log("event player", coords);
 
-        if (!gameManager.account) {
-          throw new Error('no account set');
+          if (!gameManager.account) {
+            throw new Error("no account set");
+          }
+          gameManager.playerUpdated$.publish();
         }
-        gameManager.playerUpdated$.publish();
-      })
+      )
       .on(ContractsAPIEvent.TxSubmitted, (unconfirmedTx: SubmittedTx) => {
         // todo: save the tx to localstorage
         gameManager.onTxSubmit(unconfirmedTx);
@@ -109,26 +116,37 @@ class GameManager extends EventEmitter {
         // todo: remove the tx from localstorage
         gameManager.onTxConfirmed(unconfirmedTx);
       })
-      .on(ContractsAPIEvent.TxReverted, async (unconfirmedTx: SubmittedTx, error: any) => {
-        // todo: remove the tx from localStorage
-        gameManager.onTxReverted(unconfirmedTx);
-      });
+      .on(
+        ContractsAPIEvent.TxReverted,
+        async (unconfirmedTx: SubmittedTx, error: any) => {
+          // todo: remove the tx from localStorage
+          gameManager.onTxReverted(unconfirmedTx);
+        }
+      );
 
     return gameManager;
+  }
+
+  public startMining(startPos: WorldCoords, blockhash: String) {
+    this.minerManager.startMining(this.GRID_UPPER_BOUND, startPos, blockhash);
+  }
+
+  public stopMining() {
+    this.minerManager.stopMining();
   }
 
   private onTxIntent(txIntent: TxIntent): void {
     // hook to be called on txIntent initialization
     // pop up a little notification, save txIntent to memory
     // if you want to display it to UI
-    console.log('txIntent initialized:');
+    console.log("txIntent initialized:");
     console.log(txIntent);
   }
 
   private onTxSubmit(unminedTx: SubmittedTx): void {
     // hook to be called on successful tx submission to mempool
     // pop up a little notification or log something to console
-    console.log('submitted tx:');
+    console.log("submitted tx:");
     console.log(unminedTx);
   }
 
@@ -145,7 +163,7 @@ class GameManager extends EventEmitter {
     // hook to be called when tx is mined successfully
     // pop up a little notification or log block explorer link
     // clear txIntent from memory if it was being displayed in UI
-    console.log('confirmed tx:');
+    console.log("confirmed tx:");
     console.log(tx);
   }
 
@@ -153,7 +171,7 @@ class GameManager extends EventEmitter {
     // hook to be called if tx reverts
     // pop up a little notification or log block explorer link
     // clear txIntent from memory if it was being displayed in UI
-    console.log('reverted tx:');
+    console.log("reverted tx:");
     console.log(tx);
   }
 

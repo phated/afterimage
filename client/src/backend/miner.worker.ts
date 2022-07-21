@@ -13,6 +13,8 @@ function startMining(
   let curY = startPos.y;
   let dx = 0;
   let dy = -1;
+
+  // TODO: why does this not work???
   for (let i = 0; i < 5 /*gridUpperBound ** 2*/; i++) {
     console.log(`mining (${curX}, ${curY})`);
     if (
@@ -28,7 +30,6 @@ function startMining(
       // TODO: send this to the game manager
     }
 
-    // TODO: change curX, curY, below to be deltas from start position!
     let relX = curX - startPos.x;
     let relY = curY - startPos.y;
     console.log(`relative coords: (${relX}, ${relY})`);
@@ -45,18 +46,6 @@ function startMining(
     curX += dx;
     curY += dy;
   }
-
-  // def spiral(X, Y):
-  //     x = y = 0
-  //     dx = 0
-  //     dy = -1
-  //     for i in range(max(X, Y)**2):
-  //         if (-X/2 < x <= X/2) and (-Y/2 < y <= Y/2):
-  //             print (x, y)
-  //             # DO STUFF...
-  //         if x == y or (x < 0 and x == -y) or (x > 0 and x == 1-y):
-  //             dx, dy = -dy, dx
-  //         x, y = x+dx, y+dy
 
   ctx.postMessage({
     type: "start",

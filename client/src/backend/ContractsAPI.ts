@@ -162,6 +162,29 @@ export class ContractsAPI extends EventEmitter {
     return (await this.makeCall<EthersBN>(this.coreContract.GRID_UPPER_BOUND)).toNumber();
   }
 
+  public async getSaltUpperBound(): Promise<number> {
+    return (await this.makeCall<EthersBN>(this.coreContract.SALT_UPPER_BOUND)).toNumber();
+  }
+
+  public async initPlayer(action: UnconfirmedInitPlayer) {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const tx = await this.txExecutor.queueTransaction({
+      contract: this.coreContract,
+      methodName: action.methodName,
+      args: action.callArgs,
+    });
+    const unminedInitPlayerTx: SubmittedInitPlayer = {
+      ...action,
+      txHash: (await tx.submittedPromise).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedInitPlayerTx, tx.confirmedPromise);
+  }
+
   /**
    * Given an unconfirmed (but submitted) transaction, emits the appropriate
    * [[ContractsAPIEvent]].

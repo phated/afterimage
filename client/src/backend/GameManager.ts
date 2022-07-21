@@ -15,6 +15,25 @@ import {
 } from '../_types/ContractAPITypes';
 import { hexValue } from 'ethers/lib/utils';
 import { BigNumber } from 'ethers';
+import {
+  SnarkProverQueue,
+  InitSnarkInput,
+  SnarkJSProofAndSignals,
+  buildContractCallArgs,
+} from './SnarkManager';
+import { mimcHash, mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
+import BigInt, { BigInteger } from 'big-integer';
+import initCircuitPath from '@zkgame/snarks/init.wasm';
+import initCircuitZkey from '@zkgame/snarks/init.zkey';
+import { getRandomActionId } from '../utils';
+
+type CommitmentInfo = {
+  x: number;
+  y: number;
+  blockhash: string;
+  salt: number;
+  commitment: string;
+};
 
 class GameManager extends EventEmitter {
   /**
@@ -46,22 +65,30 @@ class GameManager extends EventEmitter {
    * address and balance, etc.
    */
   private readonly ethConnection: EthConnection;
+  private readonly snarkProverQueue: SnarkProverQueue;
+
+  private readonly selfInfo: CommitmentInfo;
 
   private readonly GRID_UPPER_BOUND: number;
+  private readonly SALT_UPPER_BOUND: number;
   public playerUpdated$: Monomitter<void>;
 
   private constructor(
     account: EthAddress | undefined,
     ethConnection: EthConnection,
+    snarkProverQueue: SnarkProverQueue,
     contractsAPI: ContractsAPI,
-    GRID_UPPER_BOUND: number
+    GRID_UPPER_BOUND: number,
+    SALT_UPPER_BOUND: number
   ) {
     super();
 
     this.account = account;
     this.ethConnection = ethConnection;
+    this.snarkProverQueue = snarkProverQueue;
     this.contractsAPI = contractsAPI;
     this.GRID_UPPER_BOUND = GRID_UPPER_BOUND;
+    this.SALT_UPPER_BOUND = SALT_UPPER_BOUND;
     this.playerUpdated$ = monomitter();
   }
 
@@ -74,7 +101,16 @@ class GameManager extends EventEmitter {
 
     const contractsAPI = await makeContractsAPI(ethConnection);
     const GRID_UPPER_BOUND = await contractsAPI.getGridUpperBound();
-    const gameManager = new GameManager(account, ethConnection, contractsAPI, GRID_UPPER_BOUND);
+    const SALT_UPPER_BOUND = await contractsAPI.getSaltUpperBound();
+    const snarkProverQueue = new SnarkProverQueue();
+    const gameManager = new GameManager(
+      account,
+      ethConnection,
+      snarkProverQueue,
+      contractsAPI,
+      GRID_UPPER_BOUND,
+      SALT_UPPER_BOUND
+    );
 
     // important that this happens AFTER we load the game state from the blockchain. Otherwise our
     // 'loading game state' contract calls will be competing with events from the blockchain that
@@ -154,6 +190,77 @@ class GameManager extends EventEmitter {
 
   getGridUpperBound(): number {
     return this.GRID_UPPER_BOUND;
+  }
+
+  getSaltUpperBound(): number {
+    return this.SALT_UPPER_BOUND;
+  }
+
+  private async assembleInitSnarkInput(x: number, y: number) {
+    const provider = this.ethConnection.getProvider();
+    const latestBlockNumber = await provider.getBlockNumber();
+    const possibleHashes = [];
+    for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
+      const block = await provider.getBlock(i);
+      possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
+    }
+
+    const possibleHashesHash = mimcSponge(possibleHashes, 1, 22, 123)[0];
+    console.log('possibleHashesHash:', possibleHashesHash);
+    const blockhash = possibleHashes[Math.floor(Math.random() * possibleHashes.length)];
+
+    const salt = Math.floor(Math.random() * this.SALT_UPPER_BOUND);
+
+    const commitment = mimcSponge(
+      [BigInt(x), BigInt(y), BigInt(blockhash), BigInt(salt)],
+      1,
+      220,
+      123
+    )[0];
+
+    const snarkInput: InitSnarkInput = {
+      x: x.toString(),
+      y: y.toString(),
+      possibleHashes: possibleHashes.map((x) => x.toString()),
+      possibleHashesHash: possibleHashesHash.toString(),
+      blockhash: blockhash.toString(),
+      salt: salt.toString(),
+      saltUpperBound: this.SALT_UPPER_BOUND.toString(),
+      gridUpperBound: this.GRID_UPPER_BOUND.toString(),
+      commitment: commitment.toString(),
+    };
+
+    console.log('snarkInp', snarkInput);
+
+    const proofAndSignalData = await this.snarkProverQueue.doProof(
+      snarkInput,
+      initCircuitPath,
+      initCircuitZkey
+    );
+
+    const callArgs = buildContractCallArgs(
+      (latestBlockNumber - 31).toString(),
+      latestBlockNumber.toString(),
+      proofAndSignalData.proof,
+      proofAndSignalData.publicSignals
+    );
+
+    console.log('callArgs', callArgs);
+
+    return callArgs;
+  }
+
+  public async initPlayer(x: number, y: number) {
+    const actionId = getRandomActionId();
+    const txIntent: UnconfirmedInitPlayer = {
+      actionId,
+      methodName: ContractMethodName.INIT_PLAYER,
+      callArgs: this.assembleInitSnarkInput(x, y),
+    };
+    this.onTxIntent(txIntent);
+    this.contractsAPI.initPlayer(txIntent).catch((err) => {
+      this.onTxIntentFail(txIntent, err);
+    });
   }
 }
 

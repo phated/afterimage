@@ -64,6 +64,11 @@ module.exports = {
           },
         ],
       },
+      // Any wasm, zkye, or json files from other packages should be loaded as a plain file
+      {
+        test: /\.(wasm|zkey)$/,
+        type: 'asset/resource',
+      },
     ],
   },
   plugins: [

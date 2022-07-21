@@ -5,6 +5,7 @@
   "dependencies": {
     "@darkforest_eth/hashing": "^6.7.29",
     "@darkforest_eth/network": "^6.7.29",
+    "@darkforest_eth/events": "^6.7.29",
     "@nextui-org/react": "^1.0.2-beta.4",
     "@pronestor/react-zoom-pan-pinch": "^2.3.0",
     "@rainbow-me/rainbowkit": "^0.4.3",

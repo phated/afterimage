@@ -20,6 +20,10 @@ contract CoreFacet is WithStorage {
         return gameConstants().GRID_UPPER_BOUND;
     }
 
+    function SALT_UPPER_BOUND() public view returns (uint256) {
+        return gs().saltUpperBound;
+    }
+
     function assembleHash(uint256 blockNumLower, uint256 blockNumUpper)
         public
         view
@@ -33,7 +37,7 @@ contract CoreFacet is WithStorage {
         return LibMIMC.getCommitment(possibleBlockHashes);
     }
 
-    function init(
+    function initPlayer(
         uint256 blockNumLower,
         uint256 blockNumUpper,
         uint256[2] memory _a,
@@ -52,7 +56,7 @@ contract CoreFacet is WithStorage {
         emit PlayerUpdated(msg.sender, gs().playerStates[msg.sender].commitment);
     }
 
-    function move(
+    function movePlayer(
         uint256 blockNumLower,
         uint256 blockNumUpper,
         uint256[2] memory _a,

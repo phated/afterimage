@@ -2,6 +2,8 @@ import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import type { Opaque } from 'type-fest';
 
+import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
+
 export const tileTypeToColor: { [key: number]: string } = {
   0: '#ffac17',
   1: '#ffb83f',
@@ -137,14 +139,7 @@ export type TileContractMetaData = {
 
 export type Tile = {
   coords: WorldCoords;
-  perlin: [number, number];
-  raritySeed: number;
   tileType: TileType;
-  temperatureType: TemperatureType;
-  altitudeType: AltitudeType;
-  owner: EthAddress;
-  smartContract: EthAddress;
-  smartContractMetaData: TileContractMetaData;
 };
 
 export type PlayerInfo = {
@@ -182,4 +177,8 @@ export function address(str: string): EthAddress {
   }
   if (ret.length !== 40) throw new Error('not a valid address');
   return `0x${ret}` as EthAddress;
+}
+
+export function getCommitment(x: number, y: number, blockhash: string) {
+  return mimcSponge([modPBigInt(x), modPBigInt(y), modPBigInt(Number(blockhash))], 1, 22, 123);
 }

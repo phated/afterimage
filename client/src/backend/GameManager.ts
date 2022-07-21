@@ -28,6 +28,7 @@ import initCircuitZkey from '@zkgame/snarks/init.zkey';
 import moveCircuitPath from '@zkgame/snarks/move.wasm';
 import moveCircuitZkey from '@zkgame/snarks/move.zkey';
 import { getRandomActionId } from '../utils';
+import { MinerManager } from './Miner';
 
 type CommitmentInfo = {
   x: number;
@@ -89,6 +90,7 @@ class GameManager extends EventEmitter {
   public addressToLatestCommitment: Map<EthAddress, string>;
   public commitmentToMetadata: Map<string, CommitmentMetadata>;
   public commitmentToDecodedCommitment: Map<string, CommitmentInfo>;
+  public minerManager: MinerManager;
 
   private constructor(
     account: EthAddress | undefined,
@@ -110,6 +112,7 @@ class GameManager extends EventEmitter {
     this.addressToLatestCommitment = new Map();
     this.commitmentToMetadata = new Map();
     this.commitmentToDecodedCommitment = new Map();
+    this.minerManager = MinerManager.create(GRID_UPPER_BOUND);
   }
 
   static async create(ethConnection: EthConnection) {
@@ -179,6 +182,14 @@ class GameManager extends EventEmitter {
       });
 
     return gameManager;
+  }
+
+  public startMining(startPos: WorldCoords, blockhash: String) {
+    this.minerManager.startMining(this.GRID_UPPER_BOUND, startPos, blockhash);
+  }
+
+  public stopMining() {
+    this.minerManager.stopMining();
   }
 
   private onTxIntent(txIntent: TxIntent): void {

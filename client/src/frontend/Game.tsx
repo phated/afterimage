@@ -41,7 +41,10 @@ export default function Game() {
   const wins = useMyWins(gameManager);
 
   async function drawer() {
+    console.log('canvasRef', canvasRef.current, gameManager, currentEnemy);
     if (!canvasRef.current || !gameManager || !currentEnemy) return;
+
+    console.log('start drawing');
 
     const myPower = await gameManager.getBattlePower(gameManager.getAccount()!);
     const enemyPower = await gameManager.getBattlePower(currentEnemy!);
@@ -63,7 +66,7 @@ export default function Game() {
     const myValues = [];
 
     function myGenFn(t: number) {
-      console.log('t', t, Math.sin(t) * 10);
+      // console.log('t', t, Math.sin(t) * 10);
       return myPower[t];
     }
 
@@ -94,7 +97,7 @@ export default function Game() {
     const yourValues = [];
 
     function yourGenFn(t: number) {
-      console.log('t', t, Math.sin(t) * 10);
+      // console.log('t', t, Math.sin(t) * 10);
       return enemyPower[t];
     }
 
@@ -113,6 +116,7 @@ export default function Game() {
     }
     drawingCtx.stroke();
   }
+
   useEffect(() => {
     drawer();
   }, [canvasRef.current, gameManager, currentEnemy]);
@@ -277,6 +281,9 @@ export default function Game() {
               style={{ margin: '5px' }}
             >
               Battle
+            </button>
+            <button onClick={() => drawer()} style={{ margin: '5px' }}>
+              Redraw
             </button>
             <div style={{ margin: '5px' }}>Wins: {wins.value}</div>
             <canvas

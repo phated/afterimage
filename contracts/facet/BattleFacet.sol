@@ -38,12 +38,11 @@ contract BattleFacet is WithStorage {
         require(myPower > yourPower, "My power is not greater than your power");
     }
 
-    function getBattlePower(address player) public view notPaused returns (uint256[] memory) {
-        uint256[] memory result = new uint256[](64);
+    function getBattlePower(address player) public view notPaused returns (int256[] memory) {
+        int256[] memory result = new int256[](64);
         for (uint256 blockNum = block.number; blockNum < block.number + 60 * 64; blockNum += 60) {
-            result[blockNum - block.number] =
-                (blockNum * multiplier + gs().playerStates[player].phase) %
-                LibTrig.TWO_PI;
+            uint256 hm = (blockNum * multiplier + gs().playerStates[player].phase) % LibTrig.TWO_PI;
+            result[(blockNum - block.number) / 60] = LibTrig.sin(hm);
         }
         return result;
     }

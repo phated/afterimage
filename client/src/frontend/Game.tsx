@@ -39,8 +39,6 @@ export default function Game() {
   const canvasRef = useRef(null);
   const [currentEnemy, setCurrentEnemy] = useState<EthAddress | undefined>(undefined);
 
-  useEffect(() => {}, []);
-
   async function drawer() {
     if (!canvasRef.current || !gameManager || !currentEnemy) return;
 
@@ -64,7 +62,7 @@ export default function Game() {
 
     function myGenFn(t: number) {
       console.log('t', t, Math.sin(t) * 10);
-      return Number(myPower[t]) / 1e16;
+      return myPower[t];
     }
 
     for (let i = 0; i < width; i++) {
@@ -95,7 +93,7 @@ export default function Game() {
 
     function yourGenFn(t: number) {
       console.log('t', t, Math.sin(t) * 10);
-      return Number(enemyPower[t]) / 1e16;
+      return enemyPower[t];
     }
 
     for (let i = 0; i < width; i++) {
@@ -115,7 +113,7 @@ export default function Game() {
   }
   useEffect(() => {
     drawer();
-  }, [canvasRef.current]);
+  }, [canvasRef.current, gameManager, currentEnemy]);
 
   useEffect(() => {
     getEthConnection()

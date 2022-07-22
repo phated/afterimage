@@ -14,6 +14,8 @@ import { EthConnection } from '@darkforest_eth/network';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
 import { useSelfLoc, useTiles } from './Utils/AppHooks';
+import { useParams } from 'react-router-dom';
+import { getMaxListeners } from 'process';
 
 const enum LoadingStep {
   NONE,
@@ -23,7 +25,8 @@ const enum LoadingStep {
 }
 
 export default function Game() {
-  const privateKey = DEV_TEST_PRIVATE_KEY[0];
+  const { privKeyIdx } = useParams<{ privKeyIdx?: string }>();
+  const privateKey = DEV_TEST_PRIVATE_KEY[privKeyIdx ? parseInt(privKeyIdx) : 0];
 
   const [gameManager, setGameManager] = useState<GameManager | undefined>();
   const [pluginManager, setPluginManager] = useState<PluginManager | undefined>();
@@ -83,13 +86,22 @@ export default function Game() {
                       tile.tileType == TileKnowledge.KNOWN ? MINED_COLOR : UNMINED_COLOR;
 
                     let style = { backgroundColor: color, backgroundImage: '' };
-                    // console.log('selfLoc', selfLoc.value);
                     if (
                       selfLoc.value &&
                       selfLoc.value!.x == tile.coords.x &&
                       selfLoc.value!.y == tile.coords.y
                     ) {
                       style.backgroundImage = `url('./fremen.png')`;
+                    }
+
+                    // display other players if their shadows are known
+                    if (selfLoc.value && tile.tileType == TileKnowledge.KNOWN) {
+                      let otherMetas = tile.metas.filter(
+                        (meta) => meta.address != selfLoc.value?.address
+                      );
+                      if (otherMetas.length > 0) {
+                        style.backgroundImage = `url('./fremen_dark_5.png')`;
+                      }
                     }
 
                     return (

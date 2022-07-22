@@ -31,11 +31,21 @@ function startMining(
       const allCommits = [];
       for (var potBlockhash of blockhashes) {
         for (var potSalt = 0; potSalt < saltUpperBound; potSalt++) {
+          console.log(
+            'hash out',
+            potBlockhash,
+            modPBigIntNative(BigInt(potBlockhash.slice(2), 16))
+          );
           const commit = getCommitment(
             realX,
             realY,
             modPBigIntNative(BigInt(potBlockhash.slice(2), 16)),
             potSalt
+          );
+          console.log(
+            `dump-${realX}-${realY}-${modPBigIntNative(
+              BigInt(potBlockhash.slice(2), 16)
+            )}-${potSalt}-${commit}`
           );
           allCommits.push({
             x: realX,

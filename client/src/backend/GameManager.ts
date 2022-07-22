@@ -45,7 +45,7 @@ class GameManager extends EventEmitter {
    * represented by `undefined` in the case when you want to simply load the game state from the
    * contract and view it without be able to make any moves.
    */
-  private readonly account: EthAddress | undefined;
+  private account: EthAddress | undefined;
 
   /**
    * Allows us to make contract calls, and execute transactions. Be careful about how you use this
@@ -179,7 +179,10 @@ class GameManager extends EventEmitter {
             }
           }
 
-          if (gameManager.optimisticSelfInfo.commitment === commitment.toString()) {
+          if (
+            gameManager.optimisticSelfInfo &&
+            gameManager.optimisticSelfInfo.commitment === commitment.toString()
+          ) {
             gameManager.selfInfo = gameManager.optimisticSelfInfo;
           }
 
@@ -227,7 +230,7 @@ class GameManager extends EventEmitter {
     const provider = this.ethConnection.getProvider();
     const latestBlockNumber = await provider.getBlockNumber();
     const possibleHashes = [];
-    for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
+    for (var i = latestBlockNumber - 63; i <= latestBlockNumber; i++) {
       const block = await provider.getBlock(i);
       possibleHashes.push(block.hash);
     }
@@ -305,6 +308,7 @@ class GameManager extends EventEmitter {
     const possibleHashes = [];
     for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
       const block = await provider.getBlock(i);
+      console.log('hash out', block.hash, modPBigIntNative(BigInt(block.hash.slice(2), 16)));
       possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
     }
 
@@ -466,6 +470,12 @@ class GameManager extends EventEmitter {
 
   public emitMine() {
     this.minedTilesUpdated$.publish();
+  }
+
+  // NOTE: for testing only!
+  public setPrivateKey(privateKey: string) {
+    this.ethConnection.setAccount(privateKey);
+    this.account = this.ethConnection.getAddress();
   }
 }
 

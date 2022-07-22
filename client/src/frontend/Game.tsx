@@ -107,25 +107,36 @@ export default function Game() {
                 <GridRow key={i}>
                   {coordRow.map((tile, j) => {
                     // set color based on mining (and other things eventually)
-                    const color =
-                      tile.tileType == TileKnowledge.KNOWN ? MINED_COLOR : UNMINED_COLOR;
+                    let style = { backgroundColor: UNMINED_COLOR, backgroundImage: '' };
+                    if (tile.tileType == TileKnowledge.KNOWN) {
+                      style = { backgroundColor: MINED_COLOR, backgroundImage: '' };
+                    }
 
-                    let style = { backgroundColor: color, backgroundImage: '' };
                     if (
                       selfLoc.value &&
                       selfLoc.value!.x == tile.coords.x &&
                       selfLoc.value!.y == tile.coords.y
                     ) {
                       style.backgroundImage = `url('./fremen.png')`;
-                    }
-
-                    // display other players if their shadows are known
-                    if (selfLoc.value && tile.tileType == TileKnowledge.KNOWN) {
+                    } else if (selfLoc.value && tile.tileType == TileKnowledge.KNOWN) {
                       let otherMetas = tile.metas.filter(
                         (meta) => meta.address != selfLoc.value?.address
                       );
                       if (otherMetas.length > 0) {
-                        style.backgroundImage = `url('./fremen_dark_5.png')`;
+                        const topMeta = otherMetas[otherMetas.length - 1];
+                        if (topMeta.isCurrent) {
+                          style.backgroundImage = `url('./fremen_dark_1.png')`;
+                        } else {
+                          if (parseInt(topMeta.blockNum) > 60) {
+                            style.backgroundImage = `url('./fremen_dark_5.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 30) {
+                            style.backgroundImage = `url('./fremen_dark_4.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 10) {
+                            style.backgroundImage = `url('./fremen_dark_3.png')`;
+                          } else {
+                            style.backgroundImage = `url('./fremen_dark_2.png')`;
+                          }
+                        }
                       }
                     }
 

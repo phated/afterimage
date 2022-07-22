@@ -179,7 +179,7 @@ export function makeProvider(rpcUrl: string): providers.JsonRpcProvider {
     provider = new providers.WebSocketProvider(rpcUrl);
   } else {
     provider = new providers.StaticJsonRpcProvider(rpcUrl);
-    provider.pollingInterval = 1000;
+    provider.pollingInterval = 1200;
   }
 
   return provider;

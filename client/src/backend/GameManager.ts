@@ -84,6 +84,7 @@ class GameManager extends EventEmitter {
   public commitmentToMinedCommitment: Map<string, RawCommitment>;
   public minerManager: MinerManager;
   private tiles: Tile[][];
+  public latestEventBlockNum: number;
 
   private constructor(
     account: EthAddress | undefined,
@@ -91,7 +92,8 @@ class GameManager extends EventEmitter {
     snarkProverQueue: SnarkProverQueue,
     contractsAPI: ContractsAPI,
     GRID_UPPER_BOUND: number,
-    SALT_UPPER_BOUND: number
+    SALT_UPPER_BOUND: number,
+    latestEventBlockNum: number
   ) {
     super();
 
@@ -115,6 +117,7 @@ class GameManager extends EventEmitter {
     this.commitmentToMetadata = new Map();
     this.commitmentToMinedCommitment = new Map();
     this.minerManager = MinerManager.create(GRID_UPPER_BOUND);
+    this.latestEventBlockNum = latestEventBlockNum;
   }
 
   static async create(ethConnection: EthConnection) {
@@ -127,6 +130,8 @@ class GameManager extends EventEmitter {
     const contractsAPI = await makeContractsAPI(ethConnection);
     const GRID_UPPER_BOUND = await contractsAPI.getGridUpperBound();
     const SALT_UPPER_BOUND = await contractsAPI.getSaltUpperBound();
+    const provider = ethConnection.getProvider();
+    const latestEventBlockNum = await provider.getBlockNumber();
     const snarkProverQueue = new SnarkProverQueue();
     const gameManager = new GameManager(
       account,
@@ -134,7 +139,8 @@ class GameManager extends EventEmitter {
       snarkProverQueue,
       contractsAPI,
       GRID_UPPER_BOUND,
-      SALT_UPPER_BOUND
+      SALT_UPPER_BOUND,
+      latestEventBlockNum
     );
 
     // important that this happens AFTER we load the game state from the blockchain. Otherwise our
@@ -153,6 +159,9 @@ class GameManager extends EventEmitter {
           // todo: emit event to UI
           // TODO: do something???
           console.log('event player', moverAddr, commitment);
+
+          const provider = ethConnection.getProvider();
+          gameManager.latestEventBlockNum = await provider.getBlockNumber();
 
           // reset previous one
           const prevCommitment = gameManager.addressToLatestCommitment.get(moverAddr);
@@ -450,12 +459,14 @@ class GameManager extends EventEmitter {
   }
 
   public getTiles() {
-    // tiles meta might be stale, refresh it
+    // tiles are stale, refresh it
     for (let i = 0; i < this.GRID_UPPER_BOUND; i++) {
       for (let j = 0; j < this.GRID_UPPER_BOUND; j++) {
         const newMetas: CommitmentMetadata[] = [];
         for (const meta of this.tiles[i][j].metas) {
-          newMetas.push(this.commitmentToMetadata.get(meta.commitment)!);
+          const newMeta = this.commitmentToMetadata.get(meta.commitment)!;
+          newMeta.blockNum = (this.latestEventBlockNum - parseInt(newMeta.blockNum)).toString();
+          newMetas.push(newMeta);
         }
         this.tiles[i][j].metas = newMetas;
       }
@@ -464,7 +475,6 @@ class GameManager extends EventEmitter {
   }
 
   public getSelfLoc() {
-    // console.log('selfLoc', this.selfInfo);
     return this.selfInfo;
   }
 
@@ -472,10 +482,9 @@ class GameManager extends EventEmitter {
     this.minedTilesUpdated$.publish();
   }
 
-  // NOTE: for testing only!
-  public setPrivateKey(privateKey: string) {
-    this.ethConnection.setAccount(privateKey);
-    this.account = this.ethConnection.getAddress();
+  public async getCurrentBlockNumber() {
+    const provider = this.ethConnection.getProvider();
+    return await provider.getBlockNumber();
   }
 }
 

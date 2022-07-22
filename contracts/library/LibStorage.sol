@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 struct PlayerState {
     uint256 commitment;
-    uint256 phase;
-    uint256 wins;
 }
 
 struct GameStorage {

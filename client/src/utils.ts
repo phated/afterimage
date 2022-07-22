@@ -170,7 +170,3 @@ export type CommitmentMetadata = {
   blockNum: string;
   isCurrent: boolean;
 };
-
-export function power255() {
-  return BigInt(1).shiftLeft(255);
-}

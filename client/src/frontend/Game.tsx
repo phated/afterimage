@@ -228,7 +228,20 @@ export default function Game() {
                         (meta) => meta.address != selfLoc.value?.address
                       );
                       if (otherMetas.length > 0) {
-                        style.backgroundImage = `url('./fremen_dark_5.png')`;
+                        const topMeta = otherMetas[otherMetas.length - 1];
+                        if (topMeta.isCurrent) {
+                          style.backgroundImage = `url('./fremen_dark_1.png')`;
+                        } else {
+                          if (parseInt(topMeta.blockNum) > 60) {
+                            style.backgroundImage = `url('./fremen_dark_5.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 30) {
+                            style.backgroundImage = `url('./fremen_dark_4.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 10) {
+                            style.backgroundImage = `url('./fremen_dark_3.png')`;
+                          } else {
+                            style.backgroundImage = `url('./fremen_dark_2.png')`;
+                          }
+                        }
                       }
                     }
 

@@ -222,6 +222,16 @@ export default function Game() {
                       }
                     }
 
+                    // display other players if their shadows are known
+                    if (selfLoc.value && tile.tileType == TileKnowledge.KNOWN) {
+                      let otherMetas = tile.metas.filter(
+                        (meta) => meta.address != selfLoc.value?.address
+                      );
+                      if (otherMetas.length > 0) {
+                        style.backgroundImage = `url('./fremen_dark_5.png')`;
+                      }
+                    }
+
                     return (
                       <GridSquare
                         key={100 * i + j}

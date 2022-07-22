@@ -486,6 +486,14 @@ class GameManager extends EventEmitter {
     const provider = this.ethConnection.getProvider();
     return await provider.getBlockNumber();
   }
+
+  public getBattlePower(player: EthAddress) {
+    return this.contractsAPI.getBattlePower(player);
+  }
+
+  public getAccount() {
+    return this.account;
+  }
 }
 
 export default GameManager;

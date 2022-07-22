@@ -11,6 +11,7 @@ import {
 } from '../utils';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
 import { EthConnection } from '@zkgame/network';
+import { EthAddress } from '@darkforest_eth/types';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
 import { useSelfLoc, useTiles } from './Utils/AppHooks';
@@ -35,6 +36,86 @@ export default function Game() {
   const [error, setError] = useState('no errors');
   const tiles = useTiles(gameManager);
   const selfLoc = useSelfLoc(gameManager);
+  const canvasRef = useRef(null);
+  const [currentEnemy, setCurrentEnemy] = useState<EthAddress | undefined>(undefined);
+
+  useEffect(() => {}, []);
+
+  async function drawer() {
+    if (!canvasRef.current || !gameManager || !currentEnemy) return;
+
+    const myPower = await gameManager.getBattlePower(gameManager.getAccount()!);
+    const enemyPower = await gameManager.getBattlePower(currentEnemy!);
+
+    const canvas: any = canvasRef.current;
+    const drawingCtx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    console.log('width', width, 'height', height);
+    drawingCtx.strokeStyle = 'gainsboro';
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(0, height / 2);
+    drawingCtx.lineTo(width, height / 2);
+    drawingCtx.stroke();
+    // Draw the waveform.
+    drawingCtx.strokeStyle = 'blue';
+    drawingCtx.beginPath();
+    const myValues = [];
+
+    function myGenFn(t: number) {
+      console.log('t', t, Math.sin(t) * 10);
+      return Number(myPower[t]) / 1e16;
+    }
+
+    for (let i = 0; i < width; i++) {
+      const value = myGenFn(i / 5);
+      myValues.push(value);
+    }
+    for (let i = 0; i < width; i++) {
+      const value = myValues[i] / 125;
+      const y = height - Math.floor((value / 2 + 0.5) * height * 0.9 + height * 0.05);
+      if (i == 0) {
+        drawingCtx.moveTo(i, y);
+      } else {
+        drawingCtx.lineTo(i, y);
+      }
+    }
+    drawingCtx.stroke();
+
+    if (!currentEnemy) return;
+    drawingCtx.strokeStyle = 'gainsboro';
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(0, height / 2);
+    drawingCtx.lineTo(width, height / 2);
+    drawingCtx.stroke();
+    // Draw the waveform.
+    drawingCtx.strokeStyle = 'red';
+    drawingCtx.beginPath();
+    const yourValues = [];
+
+    function yourGenFn(t: number) {
+      console.log('t', t, Math.sin(t) * 10);
+      return Number(enemyPower[t]) / 1e16;
+    }
+
+    for (let i = 0; i < width; i++) {
+      const value = yourGenFn(i / 5);
+      yourValues.push(value);
+    }
+    for (let i = 0; i < width; i++) {
+      const value = yourValues[i] / 125;
+      const y = height - Math.floor((value / 2 + 0.5) * height * 0.9 + height * 0.05);
+      if (i == 0) {
+        drawingCtx.moveTo(i, y);
+      } else {
+        drawingCtx.lineTo(i, y);
+      }
+    }
+    drawingCtx.stroke();
+  }
+  useEffect(() => {
+    drawer();
+  }, [canvasRef.current]);
 
   useEffect(() => {
     getEthConnection()
@@ -74,6 +155,9 @@ export default function Game() {
     event.preventDefault();
     console.log('coords', coords);
     console.log('tile', tiles.value[coords.x][coords.y]);
+    if (tiles.value[coords.x][coords.y].metas.length > 0) {
+      setCurrentEnemy(tiles.value[coords.x][coords.y].metas[0].address);
+    }
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
@@ -160,6 +244,11 @@ export default function Game() {
             <button onClick={() => gameManager.initPlayer(5, 5)} style={{ margin: '5px' }}>
               Init
             </button>
+            <canvas
+              id='myCanvas'
+              ref={canvasRef}
+              style={{ border: '1px solid #000000', height: '80px', width: '400px' }}
+            />
           </FullScreen>
         </>
       ) : (

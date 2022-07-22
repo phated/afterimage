@@ -13,6 +13,7 @@ import {
   UnconfirmedMovePlayer,
   UnconfirmedInitPlayer,
   UnconfirmedBattlePlayer,
+  UnconfirmedClaimTreasure,
 } from '../_types/ContractAPITypes';
 import { hexValue } from 'ethers/lib/utils';
 import { BigNumber } from 'ethers';
@@ -568,6 +569,25 @@ class GameManager extends EventEmitter {
 
   public getWins() {
     return this.selfWins;
+  }
+
+  public async claimTreasure(x: number, y: number) {
+    const actionId = getRandomActionId();
+
+    const txIntent: UnconfirmedClaimTreasure = {
+      actionId,
+      methodName: ContractMethodName.CLAIM_TREASURE,
+      callArgs: Promise.resolve([
+        x.toString(),
+        y.toString(),
+        this.selfInfo.blockhash,
+        this.selfInfo.salt,
+      ]),
+    };
+    this.onTxIntent(txIntent);
+    this.contractsAPI.claimTreasure(txIntent).catch((err) => {
+      this.onTxIntentFail(txIntent, err);
+    });
   }
 }
 

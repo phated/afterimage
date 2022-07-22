@@ -5,6 +5,7 @@ struct PlayerState {
     uint256 commitment;
     uint256 phase;
     uint256 wins;
+    int256 shift;
 }
 
 struct GameStorage {
@@ -16,6 +17,7 @@ struct GameStorage {
     // saltUpperBound might move to the PlayerState in the future
     uint256 saltUpperBound;
     mapping(address => PlayerState) playerStates;
+    mapping(uint256 => mapping(uint256 => bool)) claimedTreasure;
 }
 
 // Game config

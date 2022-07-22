@@ -8,6 +8,7 @@ import tinycolor from 'tinycolor2';
 
 export const MINED_COLOR = '#f27100';
 export const UNMINED_COLOR = tinycolor('#797979').desaturate(100).toHexString();
+export const TREASURE_COLOR = '#FFD700';
 
 // NOTE: eventually defined based on player/contract seed, perlin noise (for tile type) etc.
 export function buildMap(width: number = 100, height: number = 100) {
@@ -173,4 +174,12 @@ export type CommitmentMetadata = {
 
 export function power255() {
   return BigInt(1).shiftLeft(255);
+}
+
+export function isTreasure(coords: WorldCoords) {
+  return (
+    mimcSponge([BigInt(coords.x), BigInt(coords.y)], 1, 220, 123)[0]
+      .mod(BigInt(13))
+      .toJSNumber() == 0
+  );
 }

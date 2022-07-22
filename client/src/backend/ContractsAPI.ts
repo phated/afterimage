@@ -22,10 +22,12 @@ import {
   ContractMethodName,
   ContractsAPIEvent,
   SubmittedBattlePlayer,
+  SubmittedClaimTreasure,
   SubmittedInitPlayer,
   SubmittedMovePlayer,
   SubmittedTx,
   UnconfirmedBattlePlayer,
+  UnconfirmedClaimTreasure,
   UnconfirmedInitPlayer,
   UnconfirmedMovePlayer,
 } from '../_types/ContractAPITypes';
@@ -244,6 +246,25 @@ export class ContractsAPI extends EventEmitter {
     return (await this.makeCall<BigNumber[]>(this.coreContract.getBattlePower, [player])).map((x) =>
       x.toBigInt()
     );
+  }
+
+  public async claimTreasure(action: UnconfirmedClaimTreasure) {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const tx = await this.txExecutor.queueTransaction({
+      contract: this.coreContract,
+      methodName: action.methodName,
+      args: action.callArgs,
+    });
+    const unminedClaimTreasureTx: SubmittedClaimTreasure = {
+      ...action,
+      txHash: (await tx.submittedPromise).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedClaimTreasureTx, tx.confirmedPromise);
   }
 
   /**

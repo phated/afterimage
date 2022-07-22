@@ -10,6 +10,7 @@ export enum ContractMethodName {
   MOVE_PLAYER = 'movePlayer',
   INIT_PLAYER = 'initPlayer',
   BATTLE_PLAYER = 'battlePlayer',
+  CLAIM_TREASURE = 'claimTreasure',
 }
 
 export const enum ContractsAPIEvent {
@@ -65,4 +66,17 @@ export type SubmittedBattlePlayer = UnconfirmedBattlePlayer & SubmittedTx;
 
 export function isUnconfirmedBattlePlayer(txIntent: TxIntent): txIntent is UnconfirmedBattlePlayer {
   return ContractMethodName.BATTLE_PLAYER == txIntent.methodName;
+}
+
+export type UnconfirmedClaimTreasure = TxIntent & {
+  methodName: ContractMethodName.CLAIM_TREASURE;
+  callArgs: Promise<unknown[]>;
+};
+
+export type SubmittedClaimTreasure = UnconfirmedClaimTreasure & SubmittedTx;
+
+export function isUnconfirmedClaimTreasure(
+  txIntent: TxIntent
+): txIntent is UnconfirmedClaimTreasure {
+  return ContractMethodName.CLAIM_TREASURE == txIntent.methodName;
 }

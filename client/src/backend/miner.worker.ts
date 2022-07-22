@@ -17,36 +17,36 @@ function startMining(
   let curY = 0;
   let dx = 0;
   let dy = -1;
-  for (var i = 0; i < gridUpperBound / 2; i++) {
+  for (var i = 0; i < gridUpperBound / 2 + 10; i++) {
     if (
       -gridUpperBound / 2 < curX &&
       curX <= gridUpperBound / 2 &&
       -gridUpperBound / 2 < curY &&
       curY <= gridUpperBound / 2
     ) {
-      console.log('coorddd', curX, curY);
+      // console.log('coorddd', curX, curY);
 
       const realX = curX + startX;
       const realY = curY + startY;
       const allCommits = [];
       for (var potBlockhash of blockhashes) {
         for (var potSalt = 0; potSalt < saltUpperBound; potSalt++) {
-          console.log(
-            'hash out',
-            potBlockhash,
-            modPBigIntNative(BigInt(potBlockhash.slice(2), 16))
-          );
+          // console.log(
+          //   'hash out',
+          //   potBlockhash,
+          //   modPBigIntNative(BigInt(potBlockhash.slice(2), 16))
+          // );
           const commit = getCommitment(
             realX,
             realY,
             modPBigIntNative(BigInt(potBlockhash.slice(2), 16)),
             potSalt
           );
-          console.log(
-            `dump-${realX}-${realY}-${modPBigIntNative(
-              BigInt(potBlockhash.slice(2), 16)
-            )}-${potSalt}-${commit}`
-          );
+          // console.log(
+          //   `dump-${realX}-${realY}-${modPBigIntNative(
+          //     BigInt(potBlockhash.slice(2), 16)
+          //   )}-${potSalt}-${commit}`
+          // );
           allCommits.push({
             x: realX,
             y: realY,

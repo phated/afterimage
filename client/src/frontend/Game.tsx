@@ -61,6 +61,10 @@ export default function Game() {
     if (gameManager) {
       gameManager.emitMine();
     }
+    document.addEventListener('keydown', handleKeyDown);
+    return function cleanup() {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [gameManager]);
 
   const onGridClick = (
@@ -70,6 +74,27 @@ export default function Game() {
     event.preventDefault();
     console.log('coords', coords);
     console.log('tile', tiles.value[coords.x][coords.y]);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (!gameManager) return;
+    const eve = event.target as HTMLElement;
+    const key = event.key.toLowerCase();
+
+    console.debug('Key event', key);
+    const keyToDirection: any = {
+      w: [-1, 0],
+      a: [0, -1],
+      s: [1, 0],
+      d: [0, 1],
+    };
+
+    if (!(key in keyToDirection)) return;
+    if (!gameManager.getSelfLoc()) return;
+
+    const dx = keyToDirection[key][0] + gameManager.getSelfLoc().x;
+    const dy = keyToDirection[key][1] + gameManager.getSelfLoc().y;
+    gameManager.movePlayer(dx, dy);
   };
 
   return (
@@ -115,6 +140,15 @@ export default function Game() {
                 </GridRow>
               );
             })}
+            <button
+              onClick={() => gameManager.startMining(selfLoc.value!.x, selfLoc.value!.y)}
+              style={{ margin: '5px' }}
+            >
+              Mine
+            </button>
+            <button onClick={() => gameManager.initPlayer(5, 5)} style={{ margin: '5px' }}>
+              Init
+            </button>
           </FullScreen>
         </>
       ) : (

@@ -2,17 +2,19 @@ import { ContractCallArgs } from '../backend/SnarkManager';
 import { WorldCoords } from '../utils';
 
 export const enum ContractEvent {
-  TileUpdated = 'TileUpdated',
+  BattleUpdated = 'BattleUpdated',
   PlayerUpdated = 'PlayerUpdated',
 }
 
 export enum ContractMethodName {
   MOVE_PLAYER = 'movePlayer',
   INIT_PLAYER = 'initPlayer',
+  BATTLE_PLAYER = 'battlePlayer',
 }
 
 export const enum ContractsAPIEvent {
   PlayerUpdated = 'PlayerUpdated',
+  BattleUpdated = 'BattleUpdated',
 
   TxInitFailed = 'TxInitFailed',
   TxSubmitted = 'TxSubmitted',
@@ -52,4 +54,15 @@ export type SubmittedInitPlayer = UnconfirmedInitPlayer & SubmittedTx;
 
 export function isUnconfirmedInitPlayer(txIntent: TxIntent): txIntent is UnconfirmedInitPlayer {
   return ContractMethodName.INIT_PLAYER == txIntent.methodName;
+}
+
+export type UnconfirmedBattlePlayer = TxIntent & {
+  methodName: ContractMethodName.BATTLE_PLAYER;
+  callArgs: Promise<unknown[]>;
+};
+
+export type SubmittedBattlePlayer = UnconfirmedBattlePlayer & SubmittedTx;
+
+export function isUnconfirmedBattlePlayer(txIntent: TxIntent): txIntent is UnconfirmedBattlePlayer {
+  return ContractMethodName.BATTLE_PLAYER == txIntent.methodName;
 }

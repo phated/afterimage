@@ -8,6 +8,8 @@ import {Verifier as BattleVerifier} from "../library/BattleVerifier.sol";
 import "hardhat/console.sol";
 
 contract BattleFacet is WithStorage {
+    event BattleUpdated(address, address);
+
     constructor() {}
 
     modifier notPaused() {
@@ -15,7 +17,7 @@ contract BattleFacet is WithStorage {
         _;
     }
 
-    uint256 constant multiplier = 1073741824107300;
+    uint256 constant multiplier = 107374182410735500;
 
     function battlePlayer(
         address player,
@@ -36,6 +38,9 @@ contract BattleFacet is WithStorage {
         require(_input[1] == yourCommitment, "Your commitment hash mismatch");
         require(BattleVerifier.verifyProof(_a, _b, _c, _input), "Bad proof");
         require(myPower > yourPower, "My power is not greater than your power");
+
+        gs().playerStates[msg.sender].wins++;
+        emit BattleUpdated(msg.sender, player);
     }
 
     function getBattlePower(address player) public view notPaused returns (int256[] memory) {
@@ -47,16 +52,7 @@ contract BattleFacet is WithStorage {
         return result;
     }
 
-    function ping() public view notPaused {
-        uint256 hm = (block.number * multiplier + gs().playerStates[msg.sender].phase) %
-            LibTrig.TWO_PI;
-        console.log("hm", hm);
-        int256 val = LibTrig.sin(hm);
-        bool neg = val < 0;
-        if (neg) {
-            val = -val;
-        }
-        console.log("neg", neg);
-        console.log("sin", uint256(val));
+    function getWins(address) public view notPaused returns (uint256) {
+        return gs().playerStates[msg.sender].wins;
     }
 }

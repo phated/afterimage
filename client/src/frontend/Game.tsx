@@ -14,7 +14,7 @@ import { EthConnection } from '@zkgame/network';
 import { EthAddress } from '@darkforest_eth/types';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
-import { useSelfLoc, useTiles } from './Utils/AppHooks';
+import { useMyWins, useSelfLoc, useTiles } from './Utils/AppHooks';
 import { useParams } from 'react-router-dom';
 import { getMaxListeners } from 'process';
 
@@ -38,6 +38,7 @@ export default function Game() {
   const selfLoc = useSelfLoc(gameManager);
   const canvasRef = useRef(null);
   const [currentEnemy, setCurrentEnemy] = useState<EthAddress | undefined>(undefined);
+  const wins = useMyWins(gameManager);
 
   async function drawer() {
     if (!canvasRef.current || !gameManager || !currentEnemy) return;
@@ -49,6 +50,7 @@ export default function Game() {
     const drawingCtx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
+    drawingCtx.clearRect(0, 0, canvas.width, canvas.height);
     console.log('width', width, 'height', height);
     drawingCtx.strokeStyle = 'gainsboro';
     drawingCtx.beginPath();
@@ -262,9 +264,21 @@ export default function Game() {
             >
               Mine
             </button>
-            <button onClick={() => gameManager.initPlayer(5, 5)} style={{ margin: '5px' }}>
+            <button
+              onClick={() =>
+                gameManager.initPlayer(5, 5 + (privKeyIdx !== undefined ? parseInt(privKeyIdx) : 0))
+              }
+              style={{ margin: '5px' }}
+            >
               Init
             </button>
+            <button
+              onClick={() => gameManager.battlePlayer(currentEnemy!)}
+              style={{ margin: '5px' }}
+            >
+              Battle
+            </button>
+            <div style={{ margin: '5px' }}>Wins: {wins.value}</div>
             <canvas
               id='myCanvas'
               ref={canvasRef}

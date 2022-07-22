@@ -1,4 +1,4 @@
-import { EthConnection } from '@darkforest_eth/network';
+import { EthConnection } from '@zkgame/network';
 import { monomitter, Monomitter, Subscription } from '@darkforest_eth/events';
 import { perlin } from '@darkforest_eth/hashing';
 import { EthAddress, WorldCoords } from '@darkforest_eth/types';
@@ -36,6 +36,7 @@ import {
   CommitmentInfo,
   OptimisticCommitmentInfo,
   CommitmentMetadata,
+  power255,
 } from '../utils';
 import { MinerManager } from './Miner';
 
@@ -45,7 +46,7 @@ class GameManager extends EventEmitter {
    * represented by `undefined` in the case when you want to simply load the game state from the
    * contract and view it without be able to make any moves.
    */
-  private readonly account: EthAddress | undefined;
+  private account: EthAddress | undefined;
 
   /**
    * Allows us to make contract calls, and execute transactions. Be careful about how you use this
@@ -84,6 +85,7 @@ class GameManager extends EventEmitter {
   public commitmentToMinedCommitment: Map<string, RawCommitment>;
   public minerManager: MinerManager;
   private tiles: Tile[][];
+  public latestEventBlockNum: number;
 
   private constructor(
     account: EthAddress | undefined,
@@ -91,7 +93,8 @@ class GameManager extends EventEmitter {
     snarkProverQueue: SnarkProverQueue,
     contractsAPI: ContractsAPI,
     GRID_UPPER_BOUND: number,
-    SALT_UPPER_BOUND: number
+    SALT_UPPER_BOUND: number,
+    latestEventBlockNum: number
   ) {
     super();
 
@@ -115,6 +118,7 @@ class GameManager extends EventEmitter {
     this.commitmentToMetadata = new Map();
     this.commitmentToMinedCommitment = new Map();
     this.minerManager = MinerManager.create(GRID_UPPER_BOUND);
+    this.latestEventBlockNum = latestEventBlockNum;
   }
 
   static async create(ethConnection: EthConnection) {
@@ -127,6 +131,8 @@ class GameManager extends EventEmitter {
     const contractsAPI = await makeContractsAPI(ethConnection);
     const GRID_UPPER_BOUND = await contractsAPI.getGridUpperBound();
     const SALT_UPPER_BOUND = await contractsAPI.getSaltUpperBound();
+    const provider = ethConnection.getProvider();
+    const latestEventBlockNum = await provider.getBlockNumber();
     const snarkProverQueue = new SnarkProverQueue();
     const gameManager = new GameManager(
       account,
@@ -134,7 +140,8 @@ class GameManager extends EventEmitter {
       snarkProverQueue,
       contractsAPI,
       GRID_UPPER_BOUND,
-      SALT_UPPER_BOUND
+      SALT_UPPER_BOUND,
+      latestEventBlockNum
     );
 
     // important that this happens AFTER we load the game state from the blockchain. Otherwise our
@@ -153,6 +160,9 @@ class GameManager extends EventEmitter {
           // todo: emit event to UI
           // TODO: do something???
           console.log('event player', moverAddr, commitment);
+
+          const provider = ethConnection.getProvider();
+          gameManager.latestEventBlockNum = await provider.getBlockNumber();
 
           // reset previous one
           const prevCommitment = gameManager.addressToLatestCommitment.get(moverAddr);
@@ -179,7 +189,10 @@ class GameManager extends EventEmitter {
             }
           }
 
-          if (gameManager.optimisticSelfInfo.commitment === commitment.toString()) {
+          if (
+            gameManager.optimisticSelfInfo &&
+            gameManager.optimisticSelfInfo.commitment === commitment.toString()
+          ) {
             gameManager.selfInfo = gameManager.optimisticSelfInfo;
           }
 
@@ -227,7 +240,7 @@ class GameManager extends EventEmitter {
     const provider = this.ethConnection.getProvider();
     const latestBlockNumber = await provider.getBlockNumber();
     const possibleHashes = [];
-    for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
+    for (var i = latestBlockNumber - 63; i <= latestBlockNumber; i++) {
       const block = await provider.getBlock(i);
       possibleHashes.push(block.hash);
     }
@@ -305,6 +318,7 @@ class GameManager extends EventEmitter {
     const possibleHashes = [];
     for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
       const block = await provider.getBlock(i);
+      console.log('hash out', block.hash, modPBigIntNative(BigInt(block.hash.slice(2), 16)));
       possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
     }
 
@@ -446,12 +460,14 @@ class GameManager extends EventEmitter {
   }
 
   public getTiles() {
-    // tiles meta might be stale, refresh it
+    // tiles are stale, refresh it
     for (let i = 0; i < this.GRID_UPPER_BOUND; i++) {
       for (let j = 0; j < this.GRID_UPPER_BOUND; j++) {
         const newMetas: CommitmentMetadata[] = [];
         for (const meta of this.tiles[i][j].metas) {
-          newMetas.push(this.commitmentToMetadata.get(meta.commitment)!);
+          const newMeta = this.commitmentToMetadata.get(meta.commitment)!;
+          newMeta.blockNum = (this.latestEventBlockNum - parseInt(newMeta.blockNum)).toString();
+          newMetas.push(newMeta);
         }
         this.tiles[i][j].metas = newMetas;
       }
@@ -460,12 +476,30 @@ class GameManager extends EventEmitter {
   }
 
   public getSelfLoc() {
-    // console.log('selfLoc', this.selfInfo);
     return this.selfInfo;
   }
 
   public emitMine() {
     this.minedTilesUpdated$.publish();
+  }
+
+  public async getCurrentBlockNumber() {
+    const provider = this.ethConnection.getProvider();
+    return await provider.getBlockNumber();
+  }
+
+  public async getBattlePower(player: EthAddress) {
+    const powers = await this.contractsAPI.getBattlePower(player);
+    const fixedPowers = powers.map((power) => {
+      return BigInt(power) > power255()
+        ? -parseInt(power255().shiftLeft(1).subtract(BigInt(power)).toString()) / 1e16
+        : parseInt(BigInt(power).toString()) / 1e16;
+    });
+    return fixedPowers;
+  }
+
+  public getAccount() {
+    return this.account;
   }
 }
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import tinycolor from 'tinycolor2';
 import GameManager from '../backend/GameManager';
 import {
   DEV_TEST_PRIVATE_KEY,
@@ -11,10 +10,13 @@ import {
   UNMINED_COLOR,
 } from '../utils';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
-import { EthConnection } from '@darkforest_eth/network';
+import { EthConnection } from '@zkgame/network';
+import { EthAddress } from '@darkforest_eth/types';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
 import { useSelfLoc, useTiles } from './Utils/AppHooks';
+import { useParams } from 'react-router-dom';
+import { getMaxListeners } from 'process';
 
 const enum LoadingStep {
   NONE,
@@ -24,7 +26,8 @@ const enum LoadingStep {
 }
 
 export default function Game() {
-  const privateKey = DEV_TEST_PRIVATE_KEY[0];
+  const { privKeyIdx } = useParams<{ privKeyIdx?: string }>();
+  const privateKey = DEV_TEST_PRIVATE_KEY[privKeyIdx ? parseInt(privKeyIdx) : 0];
 
   const [gameManager, setGameManager] = useState<GameManager | undefined>();
   const [pluginManager, setPluginManager] = useState<PluginManager | undefined>();
@@ -33,6 +36,84 @@ export default function Game() {
   const [error, setError] = useState('no errors');
   const tiles = useTiles(gameManager);
   const selfLoc = useSelfLoc(gameManager);
+  const canvasRef = useRef(null);
+  const [currentEnemy, setCurrentEnemy] = useState<EthAddress | undefined>(undefined);
+
+  async function drawer() {
+    if (!canvasRef.current || !gameManager || !currentEnemy) return;
+
+    const myPower = await gameManager.getBattlePower(gameManager.getAccount()!);
+    const enemyPower = await gameManager.getBattlePower(currentEnemy!);
+
+    const canvas: any = canvasRef.current;
+    const drawingCtx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    console.log('width', width, 'height', height);
+    drawingCtx.strokeStyle = 'gainsboro';
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(0, height / 2);
+    drawingCtx.lineTo(width, height / 2);
+    drawingCtx.stroke();
+    // Draw the waveform.
+    drawingCtx.strokeStyle = 'blue';
+    drawingCtx.beginPath();
+    const myValues = [];
+
+    function myGenFn(t: number) {
+      console.log('t', t, Math.sin(t) * 10);
+      return myPower[t];
+    }
+
+    for (let i = 0; i < width; i++) {
+      const value = myGenFn(i / 5);
+      myValues.push(value);
+    }
+    for (let i = 0; i < width; i++) {
+      const value = myValues[i] / 125;
+      const y = height - Math.floor((value / 2 + 0.5) * height * 0.9 + height * 0.05);
+      if (i == 0) {
+        drawingCtx.moveTo(i, y);
+      } else {
+        drawingCtx.lineTo(i, y);
+      }
+    }
+    drawingCtx.stroke();
+
+    if (!currentEnemy) return;
+    drawingCtx.strokeStyle = 'gainsboro';
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(0, height / 2);
+    drawingCtx.lineTo(width, height / 2);
+    drawingCtx.stroke();
+    // Draw the waveform.
+    drawingCtx.strokeStyle = 'red';
+    drawingCtx.beginPath();
+    const yourValues = [];
+
+    function yourGenFn(t: number) {
+      console.log('t', t, Math.sin(t) * 10);
+      return enemyPower[t];
+    }
+
+    for (let i = 0; i < width; i++) {
+      const value = yourGenFn(i / 5);
+      yourValues.push(value);
+    }
+    for (let i = 0; i < width; i++) {
+      const value = yourValues[i] / 125;
+      const y = height - Math.floor((value / 2 + 0.5) * height * 0.9 + height * 0.05);
+      if (i == 0) {
+        drawingCtx.moveTo(i, y);
+      } else {
+        drawingCtx.lineTo(i, y);
+      }
+    }
+    drawingCtx.stroke();
+  }
+  useEffect(() => {
+    drawer();
+  }, [canvasRef.current, gameManager, currentEnemy]);
 
   useEffect(() => {
     getEthConnection()
@@ -42,8 +123,6 @@ export default function Game() {
         setStep(LoadingStep.LOADED_ETH_CONNECTION);
         const gm = await GameManager.create(ethConnection);
         window.gm = gm;
-        // TODO: add back in after testing manually
-        // gm.startMining(curPosition);
         setGameManager(gm);
         setStep(LoadingStep.LOADED_GAME_MANAGER);
         const pm = new PluginManager(gameManager!);
@@ -61,6 +140,10 @@ export default function Game() {
     if (gameManager) {
       gameManager.emitMine();
     }
+    document.addEventListener('keydown', handleKeyDown);
+    return function cleanup() {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [gameManager]);
 
   const onGridClick = (
@@ -70,6 +153,30 @@ export default function Game() {
     event.preventDefault();
     console.log('coords', coords);
     console.log('tile', tiles.value[coords.x][coords.y]);
+    if (tiles.value[coords.x][coords.y].metas.length > 0) {
+      setCurrentEnemy(tiles.value[coords.x][coords.y].metas[0].address);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (!gameManager) return;
+    const eve = event.target as HTMLElement;
+    const key = event.key.toLowerCase();
+
+    console.debug('Key event', key);
+    const keyToDirection: any = {
+      w: [-1, 0],
+      a: [0, -1],
+      s: [1, 0],
+      d: [0, 1],
+    };
+
+    if (!(key in keyToDirection)) return;
+    if (!gameManager.getSelfLoc()) return;
+
+    const dx = keyToDirection[key][0] + gameManager.getSelfLoc().x;
+    const dy = keyToDirection[key][1] + gameManager.getSelfLoc().y;
+    gameManager.movePlayer(dx, dy);
   };
 
   return (
@@ -82,17 +189,37 @@ export default function Game() {
                 <GridRow key={i}>
                   {coordRow.map((tile, j) => {
                     // set color based on mining (and other things eventually)
-                    const color =
-                      tile.tileType == TileKnowledge.KNOWN ? MINED_COLOR : UNMINED_COLOR;
+                    let style = { backgroundColor: UNMINED_COLOR, backgroundImage: '' };
+                    if (tile.tileType == TileKnowledge.KNOWN) {
+                      style = { backgroundColor: MINED_COLOR, backgroundImage: '' };
+                    }
 
-                    let style = { backgroundColor: color, backgroundImage: '' };
-                    // console.log('selfLoc', selfLoc.value);
                     if (
                       selfLoc.value &&
                       selfLoc.value!.x == tile.coords.x &&
                       selfLoc.value!.y == tile.coords.y
                     ) {
                       style.backgroundImage = `url('./fremen.png')`;
+                    } else if (selfLoc.value && tile.tileType == TileKnowledge.KNOWN) {
+                      let otherMetas = tile.metas.filter(
+                        (meta) => meta.address != selfLoc.value?.address
+                      );
+                      if (otherMetas.length > 0) {
+                        const topMeta = otherMetas[otherMetas.length - 1];
+                        if (topMeta.isCurrent) {
+                          style.backgroundImage = `url('./fremen_dark_1.png')`;
+                        } else {
+                          if (parseInt(topMeta.blockNum) > 60) {
+                            style.backgroundImage = `url('./fremen_dark_5.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 30) {
+                            style.backgroundImage = `url('./fremen_dark_4.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 10) {
+                            style.backgroundImage = `url('./fremen_dark_3.png')`;
+                          } else {
+                            style.backgroundImage = `url('./fremen_dark_2.png')`;
+                          }
+                        }
+                      }
                     }
 
                     return (
@@ -106,6 +233,20 @@ export default function Game() {
                 </GridRow>
               );
             })}
+            <button
+              onClick={() => gameManager.startMining(selfLoc.value!.x, selfLoc.value!.y)}
+              style={{ margin: '5px' }}
+            >
+              Mine
+            </button>
+            <button onClick={() => gameManager.initPlayer(5, 5)} style={{ margin: '5px' }}>
+              Init
+            </button>
+            <canvas
+              id='myCanvas'
+              ref={canvasRef}
+              style={{ border: '1px solid #000000', height: '80px', width: '400px' }}
+            />
           </FullScreen>
         </>
       ) : (
@@ -131,16 +272,6 @@ export default function Game() {
     </>
   );
 }
-
-const Page = styled.div`
-  color: black;
-  font-size: 7;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-`;
 
 const GridRow = styled.div`
   display: flex;

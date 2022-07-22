@@ -11,6 +11,7 @@ function App() {
       <GlobalStyle />
       <Router>
         <Routes>
+          <Route path='/:privKeyIdx' element={<Game />} />
           <Route path='/' element={<Game />} />
         </Routes>
       </Router>

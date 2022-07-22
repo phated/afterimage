@@ -7,9 +7,13 @@ diamond = "Diamond"
 initializer = "Initializer"
 
 [[zkgame.facets]]
-name = "CoreFacet"
+name = "MotionFacet"
 selectors = "*"
 
 [[zkgame.facets]]
 name = "WhitelistFacet"
+selectors = "*"
+
+[[zkgame.facets]]
+name = "BattleFacet"
 selectors = "*"

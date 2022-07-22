@@ -1,5 +1,5 @@
 import { CONTRACT_ADDRESS } from '@zkgame/contracts';
-import { Transaction, TxIntent } from '@darkforest_eth/types';
+import { Transaction, TxIntent, EthAddress } from '@darkforest_eth/types';
 import { address } from '../utils';
 import type { ZKGame } from '@zkgame/typechain';
 import {
@@ -8,7 +8,7 @@ import {
   ethToWei,
   // QueuedTransaction,
   TxExecutor,
-} from '@darkforest_eth/network';
+} from '@zkgame/network';
 import { EventEmitter } from 'events';
 import {
   BigNumber,
@@ -209,6 +209,12 @@ export class ContractsAPI extends EventEmitter {
     };
 
     return this.waitFor(unminedMovePlayerTx, tx.confirmedPromise);
+  }
+
+  public async getBattlePower(player: EthAddress): Promise<bigint[]> {
+    return (await this.makeCall<BigNumber[]>(this.coreContract.getBattlePower, [player])).map((x) =>
+      x.toBigInt()
+    );
   }
 
   /**

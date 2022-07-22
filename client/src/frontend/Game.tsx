@@ -10,7 +10,7 @@ import {
   UNMINED_COLOR,
 } from '../utils';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
-import { EthConnection } from '@darkforest_eth/network';
+import { EthConnection } from '@zkgame/network';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
 import { useSelfLoc, useTiles } from './Utils/AppHooks';

@@ -8,7 +8,7 @@ import {
   ethToWei,
   // QueuedTransaction,
   TxExecutor,
-} from '@darkforest_eth/network';
+} from '@zkgame/network';
 import { EventEmitter } from 'events';
 import {
   BigNumber,

@@ -1,4 +1,4 @@
-import { EthConnection } from '@darkforest_eth/network';
+import { EthConnection } from '@zkgame/network';
 import { monomitter, Monomitter, Subscription } from '@darkforest_eth/events';
 import { perlin } from '@darkforest_eth/hashing';
 import { EthAddress, WorldCoords } from '@darkforest_eth/types';

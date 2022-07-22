@@ -36,6 +36,7 @@ import {
   CommitmentInfo,
   OptimisticCommitmentInfo,
   CommitmentMetadata,
+  power255,
 } from '../utils';
 import { MinerManager } from './Miner';
 
@@ -485,6 +486,20 @@ class GameManager extends EventEmitter {
   public async getCurrentBlockNumber() {
     const provider = this.ethConnection.getProvider();
     return await provider.getBlockNumber();
+  }
+
+  public async getBattlePower(player: EthAddress) {
+    const powers = await this.contractsAPI.getBattlePower(player);
+    const fixedPowers = powers.map((power) => {
+      return BigInt(power) > power255()
+        ? -parseInt(power255().shiftLeft(1).subtract(BigInt(power)).toString()) / 1e16
+        : parseInt(BigInt(power).toString()) / 1e16;
+    });
+    return fixedPowers;
+  }
+
+  public getAccount() {
+    return this.account;
   }
 }
 

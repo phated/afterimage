@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import tinycolor from 'tinycolor2';
 import GameManager from '../backend/GameManager';
 import {
   DEV_TEST_PRIVATE_KEY,
@@ -42,8 +41,6 @@ export default function Game() {
         setStep(LoadingStep.LOADED_ETH_CONNECTION);
         const gm = await GameManager.create(ethConnection);
         window.gm = gm;
-        // TODO: add back in after testing manually
-        // gm.startMining(curPosition);
         setGameManager(gm);
         setStep(LoadingStep.LOADED_GAME_MANAGER);
         const pm = new PluginManager(gameManager!);
@@ -131,16 +128,6 @@ export default function Game() {
     </>
   );
 }
-
-const Page = styled.div`
-  color: black;
-  font-size: 7;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-`;
 
 const GridRow = styled.div`
   display: flex;

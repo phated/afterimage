@@ -8,15 +8,18 @@ import {
   WorldCoords,
   MINED_COLOR,
   UNMINED_COLOR,
+  TREASURE_COLOR,
+  isTreasure,
 } from '../utils';
 import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
 import { EthConnection } from '@zkgame/network';
 import { EthAddress } from '@darkforest_eth/types';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
-import { useSelfLoc, useTiles } from './Utils/AppHooks';
+import { useMyWins, useSelfLoc, useTiles } from './Utils/AppHooks';
 import { useParams } from 'react-router-dom';
 import { getMaxListeners } from 'process';
+import { mimcSponge } from '@darkforest_eth/hashing';
 
 const enum LoadingStep {
   NONE,
@@ -38,9 +41,13 @@ export default function Game() {
   const selfLoc = useSelfLoc(gameManager);
   const canvasRef = useRef(null);
   const [currentEnemy, setCurrentEnemy] = useState<EthAddress | undefined>(undefined);
+  const wins = useMyWins(gameManager);
 
   async function drawer() {
+    console.log('canvasRef', canvasRef.current, gameManager, currentEnemy);
     if (!canvasRef.current || !gameManager || !currentEnemy) return;
+
+    console.log('start drawing');
 
     const myPower = await gameManager.getBattlePower(gameManager.getAccount()!);
     const enemyPower = await gameManager.getBattlePower(currentEnemy!);
@@ -49,6 +56,7 @@ export default function Game() {
     const drawingCtx = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
+    drawingCtx.clearRect(0, 0, canvas.width, canvas.height);
     console.log('width', width, 'height', height);
     drawingCtx.strokeStyle = 'gainsboro';
     drawingCtx.beginPath();
@@ -61,9 +69,10 @@ export default function Game() {
     const myValues = [];
 
     function myGenFn(t: number) {
-      console.log('t', t, Math.sin(t) * 10);
+      // console.log('t', t, Math.sin(t) * 10);
       return myPower[t];
     }
+    console.log('myPower', myPower);
 
     for (let i = 0; i < width; i++) {
       const value = myGenFn(i / 5);
@@ -92,9 +101,10 @@ export default function Game() {
     const yourValues = [];
 
     function yourGenFn(t: number) {
-      console.log('t', t, Math.sin(t) * 10);
+      // console.log('t', t, Math.sin(t) * 10);
       return enemyPower[t];
     }
+    console.log('enemyPower', enemyPower);
 
     for (let i = 0; i < width; i++) {
       const value = yourGenFn(i / 5);
@@ -111,6 +121,7 @@ export default function Game() {
     }
     drawingCtx.stroke();
   }
+
   useEffect(() => {
     drawer();
   }, [canvasRef.current, gameManager, currentEnemy]);
@@ -155,6 +166,8 @@ export default function Game() {
     console.log('tile', tiles.value[coords.x][coords.y]);
     if (tiles.value[coords.x][coords.y].metas.length > 0) {
       setCurrentEnemy(tiles.value[coords.x][coords.y].metas[0].address);
+    } else if (isTreasure(coords)) {
+      gameManager!.claimTreasure(coords.x, coords.y);
     }
   };
 
@@ -190,6 +203,9 @@ export default function Game() {
                   {coordRow.map((tile, j) => {
                     // set color based on mining (and other things eventually)
                     let style = { backgroundColor: UNMINED_COLOR, backgroundImage: '' };
+                    if (isTreasure({ x: i, y: j })) {
+                      style = { backgroundColor: TREASURE_COLOR, backgroundImage: '' };
+                    }
                     if (tile.tileType == TileKnowledge.KNOWN) {
                       style = { backgroundColor: MINED_COLOR, backgroundImage: '' };
                     }
@@ -201,6 +217,29 @@ export default function Game() {
                     ) {
                       style.backgroundImage = `url('./fremen.png')`;
                     } else if (selfLoc.value && tile.tileType == TileKnowledge.KNOWN) {
+                      let otherMetas = tile.metas.filter(
+                        (meta) => meta.address != selfLoc.value?.address
+                      );
+                      if (otherMetas.length > 0) {
+                        const topMeta = otherMetas[otherMetas.length - 1];
+                        if (topMeta.isCurrent) {
+                          style.backgroundImage = `url('./fremen_dark_1.png')`;
+                        } else {
+                          if (parseInt(topMeta.blockNum) > 60) {
+                            style.backgroundImage = `url('./fremen_dark_5.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 30) {
+                            style.backgroundImage = `url('./fremen_dark_4.png')`;
+                          } else if (parseInt(topMeta.blockNum) > 10) {
+                            style.backgroundImage = `url('./fremen_dark_3.png')`;
+                          } else {
+                            style.backgroundImage = `url('./fremen_dark_2.png')`;
+                          }
+                        }
+                      }
+                    }
+
+                    // display other players if their shadows are known
+                    if (selfLoc.value && tile.tileType == TileKnowledge.KNOWN) {
                       let otherMetas = tile.metas.filter(
                         (meta) => meta.address != selfLoc.value?.address
                       );
@@ -239,9 +278,24 @@ export default function Game() {
             >
               Mine
             </button>
-            <button onClick={() => gameManager.initPlayer(5, 5)} style={{ margin: '5px' }}>
+            <button
+              onClick={() =>
+                gameManager.initPlayer(5, 5 + (privKeyIdx !== undefined ? parseInt(privKeyIdx) : 0))
+              }
+              style={{ margin: '5px' }}
+            >
               Init
             </button>
+            <button
+              onClick={() => gameManager.battlePlayer(currentEnemy!)}
+              style={{ margin: '5px' }}
+            >
+              Battle
+            </button>
+            <button onClick={() => drawer()} style={{ margin: '5px' }}>
+              Redraw
+            </button>
+            <div style={{ margin: '5px' }}>Wins: {wins.value}</div>
             <canvas
               id='myCanvas'
               ref={canvasRef}

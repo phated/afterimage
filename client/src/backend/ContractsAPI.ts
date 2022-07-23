@@ -21,9 +21,13 @@ import {
   ContractEvent,
   ContractMethodName,
   ContractsAPIEvent,
+  SubmittedBattlePlayer,
+  SubmittedClaimTreasure,
   SubmittedInitPlayer,
   SubmittedMovePlayer,
   SubmittedTx,
+  UnconfirmedBattlePlayer,
+  UnconfirmedClaimTreasure,
   UnconfirmedInitPlayer,
   UnconfirmedMovePlayer,
 } from '../_types/ContractAPITypes';
@@ -134,9 +138,10 @@ export class ContractsAPI extends EventEmitter {
     const filter = {
       address: coreContract.address,
       topics: [
-        [coreContract.filters.PlayerUpdated(null, null).topics].map(
-          (topicsOrUndefined) => (topicsOrUndefined || [])[0]
-        ),
+        [
+          coreContract.filters.PlayerUpdated(null, null).topics,
+          coreContract.filters.BattleUpdated(null, null).topics,
+        ].map((topicsOrUndefined) => (topicsOrUndefined || [])[0]),
       ] as Array<string | Array<string>>,
     };
 
@@ -153,6 +158,9 @@ export class ContractsAPI extends EventEmitter {
           blockNum.toBigInt()
         );
       },
+      [ContractEvent.BattleUpdated]: (player1: string, player2: string) => {
+        this.emit(ContractsAPIEvent.BattleUpdated, address(player1), address(player2));
+      },
     };
 
     this.ethConnection.subscribeToContractEvents(coreContract, eventHandlers, filter);
@@ -162,7 +170,7 @@ export class ContractsAPI extends EventEmitter {
     const { coreContract } = this;
 
     coreContract.removeAllListeners(ContractEvent.PlayerUpdated);
-    coreContract.removeAllListeners(ContractEvent.TileUpdated);
+    coreContract.removeAllListeners(ContractEvent.BattleUpdated);
   }
 
   public async getGridUpperBound(): Promise<number> {
@@ -171,6 +179,10 @@ export class ContractsAPI extends EventEmitter {
 
   public async getSaltUpperBound(): Promise<number> {
     return (await this.makeCall<EthersBN>(this.coreContract.SALT_UPPER_BOUND)).toNumber();
+  }
+
+  public async getWins(address: EthAddress): Promise<number> {
+    return (await this.makeCall<EthersBN>(this.coreContract.getWins, [address])).toNumber();
   }
 
   public async initPlayer(action: UnconfirmedInitPlayer) {
@@ -211,10 +223,48 @@ export class ContractsAPI extends EventEmitter {
     return this.waitFor(unminedMovePlayerTx, tx.confirmedPromise);
   }
 
+  public async battlePlayer(action: UnconfirmedBattlePlayer) {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const tx = await this.txExecutor.queueTransaction({
+      contract: this.coreContract,
+      methodName: action.methodName,
+      args: action.callArgs,
+    });
+    const unminedBattlePlayerTx: SubmittedBattlePlayer = {
+      ...action,
+      txHash: (await tx.submittedPromise).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedBattlePlayerTx, tx.confirmedPromise);
+  }
+
   public async getBattlePower(player: EthAddress): Promise<bigint[]> {
     return (await this.makeCall<BigNumber[]>(this.coreContract.getBattlePower, [player])).map((x) =>
       x.toBigInt()
     );
+  }
+
+  public async claimTreasure(action: UnconfirmedClaimTreasure) {
+    if (!this.txExecutor) {
+      throw new Error('no signer, cannot execute tx');
+    }
+
+    const tx = await this.txExecutor.queueTransaction({
+      contract: this.coreContract,
+      methodName: action.methodName,
+      args: action.callArgs,
+    });
+    const unminedClaimTreasureTx: SubmittedClaimTreasure = {
+      ...action,
+      txHash: (await tx.submittedPromise).hash,
+      sentAtTimestamp: Math.floor(Date.now() / 1000),
+    };
+
+    return this.waitFor(unminedClaimTreasureTx, tx.confirmedPromise);
   }
 
   /**

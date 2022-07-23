@@ -12,6 +12,8 @@ import {
   TxIntent,
   UnconfirmedMovePlayer,
   UnconfirmedInitPlayer,
+  UnconfirmedBattlePlayer,
+  UnconfirmedClaimTreasure,
 } from '../_types/ContractAPITypes';
 import { hexValue } from 'ethers/lib/utils';
 import { BigNumber } from 'ethers';
@@ -20,6 +22,7 @@ import {
   InitSnarkInput,
   SnarkJSProofAndSignals,
   buildContractCallArgs,
+  buildBattleContractCallArgs,
 } from './SnarkManager';
 import { mimcHash, mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
 import BigInt, { BigInteger } from 'big-integer';
@@ -27,6 +30,8 @@ import initCircuitPath from '@zkgame/snarks/init.wasm';
 import initCircuitZkey from '@zkgame/snarks/init.zkey';
 import moveCircuitPath from '@zkgame/snarks/move.wasm';
 import moveCircuitZkey from '@zkgame/snarks/move.zkey';
+import battleCircuitPath from '@zkgame/snarks/battle.wasm';
+import battleCircuitZkey from '@zkgame/snarks/battle.zkey';
 import {
   address,
   getRandomActionId,
@@ -79,6 +84,7 @@ class GameManager extends EventEmitter {
   private readonly SALT_UPPER_BOUND: number;
   public playerUpdated$: Monomitter<void>;
   public minedTilesUpdated$: Monomitter<void>;
+  public battleUpdated$: Monomitter<void>;
 
   public addressToLatestCommitment: Map<EthAddress, string>;
   public commitmentToMetadata: Map<string, CommitmentMetadata>;
@@ -86,6 +92,7 @@ class GameManager extends EventEmitter {
   public minerManager: MinerManager;
   private tiles: Tile[][];
   public latestEventBlockNum: number;
+  private selfWins: number;
 
   private constructor(
     account: EthAddress | undefined,
@@ -106,6 +113,8 @@ class GameManager extends EventEmitter {
     this.SALT_UPPER_BOUND = SALT_UPPER_BOUND;
     this.playerUpdated$ = monomitter();
     this.minedTilesUpdated$ = monomitter();
+    this.battleUpdated$ = monomitter();
+    this.selfWins = 0;
     this.tiles = [];
     for (let i = 0; i < GRID_UPPER_BOUND; i++) {
       const row = [];
@@ -202,6 +211,11 @@ class GameManager extends EventEmitter {
           gameManager.playerUpdated$.publish();
         }
       )
+      .on(ContractsAPIEvent.BattleUpdated, async (player1: EthAddress, player2: EthAddress) => {
+        console.log('event battle', player1, player2);
+        gameManager.selfWins = await gameManager.fetchWins();
+        gameManager.battleUpdated$.publish();
+      })
       .on(ContractsAPIEvent.TxSubmitted, (unconfirmedTx: SubmittedTx) => {
         // todo: save the tx to localstorage
         gameManager.onTxSubmit(unconfirmedTx);
@@ -498,8 +512,82 @@ class GameManager extends EventEmitter {
     return fixedPowers;
   }
 
+  public async assembleBattleSnarkInput(player: EthAddress, actionId: string) {
+    const latestCommitment = this.addressToLatestCommitment.get(player);
+    const latestMinedCommitment = this.commitmentToMinedCommitment.get(latestCommitment!)!;
+    const fullInput = {
+      myX: this.selfInfo.x.toString(),
+      myY: this.selfInfo.y.toString(),
+      myBlockhash: this.selfInfo.blockhash,
+      mySalt: this.selfInfo.salt,
+      myCommitment: this.selfInfo.commitment,
+      yourX: latestMinedCommitment.x.toString(),
+      yourY: latestMinedCommitment.y.toString(),
+      yourBlockhash: latestMinedCommitment.blockhash,
+      yourSalt: latestMinedCommitment.salt,
+      yourCommitment: latestMinedCommitment.commitment,
+    };
+    console.log('fullInput', fullInput);
+
+    const proofAndSignalData = await this.snarkProverQueue.doProof(
+      fullInput,
+      battleCircuitPath,
+      battleCircuitZkey
+    );
+
+    const callArgs = buildBattleContractCallArgs(
+      player,
+      proofAndSignalData.proof,
+      proofAndSignalData.publicSignals
+    );
+
+    console.log('callArgs', callArgs);
+
+    return callArgs;
+  }
+
+  public async battlePlayer(player: EthAddress) {
+    const actionId = getRandomActionId();
+    const txIntent: UnconfirmedBattlePlayer = {
+      actionId,
+      methodName: ContractMethodName.BATTLE_PLAYER,
+      callArgs: this.assembleBattleSnarkInput(player, actionId),
+    };
+    this.onTxIntent(txIntent);
+    this.contractsAPI.battlePlayer(txIntent).catch((err) => {
+      this.onTxIntentFail(txIntent, err);
+    });
+  }
+
   public getAccount() {
     return this.account;
+  }
+
+  public fetchWins() {
+    return this.contractsAPI.getWins(this.account!);
+  }
+
+  public getWins() {
+    return this.selfWins;
+  }
+
+  public async claimTreasure(x: number, y: number) {
+    const actionId = getRandomActionId();
+
+    const txIntent: UnconfirmedClaimTreasure = {
+      actionId,
+      methodName: ContractMethodName.CLAIM_TREASURE,
+      callArgs: Promise.resolve([
+        x.toString(),
+        y.toString(),
+        this.selfInfo.blockhash,
+        this.selfInfo.salt,
+      ]),
+    };
+    this.onTxIntent(txIntent);
+    this.contractsAPI.claimTreasure(txIntent).catch((err) => {
+      this.onTxIntentFail(txIntent, err);
+    });
   }
 }
 

@@ -14,7 +14,7 @@ export function useTiles(gameManager: GameManager | undefined): Wrapper<Tile[][]
   );
 
   const onUpdate = useCallback(() => {
-    console.log('onUpdate');
+    console.log('onUpdate setTiles');
     setTiles(new Wrapper(gameManager ? gameManager.getTiles() : []));
   }, [gameManager]);
 
@@ -31,7 +31,7 @@ export function useSelfLoc(
   );
 
   const onUpdate = useCallback(() => {
-    console.log('onUpdate');
+    console.log('onUpdate setSelfLoc');
     setSelfLoc(new Wrapper(gameManager ? gameManager.getSelfLoc() : undefined));
   }, [gameManager]);
 
@@ -39,6 +39,21 @@ export function useSelfLoc(
   useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
 
   return selfLoc;
+}
+
+export function useMyWins(gameManager: GameManager | undefined): Wrapper<number> {
+  const [myWins, setMyWins] = useState<Wrapper<number>>(
+    () => new Wrapper(gameManager ? gameManager.getWins() : 0)
+  );
+
+  const onUpdate = useCallback(() => {
+    console.log('onUpdate setMyWins');
+    setMyWins(new Wrapper(gameManager ? gameManager.getWins() : 0));
+  }, [gameManager]);
+
+  useEmitterSubscribe(gameManager?.battleUpdated$, onUpdate);
+
+  return myWins;
 }
 
 // /**

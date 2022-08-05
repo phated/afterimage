@@ -16,12 +16,15 @@ export function tscompile(input: string): CompiledOuput {
     declarationMap: true,
     sourceMap: true,
     inlineSources: true,
+    target: ts.ScriptTarget.ESNext,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Node16,
   };
   const inputFileName = "index.ts";
   const sourceFile = ts.createSourceFile(
     inputFileName,
     input,
-    ts.ScriptTarget.ES2020
+    ts.ScriptTarget.ESNext
   );
 
   // Create a Program with an in-memory emit

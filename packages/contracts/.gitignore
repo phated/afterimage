@@ -1,3 +1,4 @@
 *.json
+!tsconfig.json
 *.d.ts
 *.map

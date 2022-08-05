@@ -1,6 +1,7 @@
 {
-    "recommendations": [
-        "nomicfoundation.hardhat-solidity",
-        "iden3.circom"
-    ]
+  "recommendations": [
+    "nomicfoundation.hardhat-solidity",
+    "iden3.circom",
+    "svelte.svelte-vscode"
+  ]
 }

@@ -18,7 +18,6 @@
     "circom:prod": "hardhat circom --verbose",
     "test": "hardhat test"
   },
-  "dependencies": {},
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.2",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",

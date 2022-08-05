@@ -26,20 +26,37 @@ contract CoreFacet is WithStorage {
         uint256[2][2] memory _b,
         uint256[2] memory _c,
         uint256[4] memory _input
-        ) public notPaused {
-        uint256[] memory possibleBlockHashes = new uint256[](blockNumUpper - blockNumLower + 1);
-        for (uint256 blockNum = blockNumLower; blockNum <= blockNumUpper; blockNum++) {
-            possibleBlockHashes[blockNum - blockNumLower] = uint256(blockhash(blockNum));
+    ) public notPaused {
+        uint256[] memory possibleBlockHashes = new uint256[](
+            blockNumUpper - blockNumLower + 1
+        );
+        for (
+            uint256 blockNum = blockNumLower;
+            blockNum <= blockNumUpper;
+            blockNum++
+        ) {
+            possibleBlockHashes[blockNum - blockNumLower] = uint256(
+                blockhash(blockNum)
+            );
         }
 
         uint256 possibleHashesHash = LibMIMC.getCommitment(possibleBlockHashes);
 
-        require(_input[0] == possibleHashesHash, "Block number commitment hash mismatch");
+        require(
+            _input[0] == possibleHashesHash,
+            "Block number commitment hash mismatch"
+        );
         require(_input[1] == gs().saltUpperBound, "Salt upper bound mismatch");
-        require(_input[2] == gameConstants().GRID_UPPER_BOUND, "Grid upper bound mismatch");
+        require(
+            _input[2] == gameConstants().GRID_UPPER_BOUND,
+            "Grid upper bound mismatch"
+        );
         require(CommiterVerifier.verifyProof(_a, _b, _c, _input), "Bad proof");
 
         gs().playerStates[msg.sender].commitment = _input[3];
-        emit PlayerUpdated(msg.sender, gs().playerStates[msg.sender].commitment);
+        emit PlayerUpdated(
+            msg.sender,
+            gs().playerStates[msg.sender].commitment
+        );
     }
 }

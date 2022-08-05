@@ -23,7 +23,7 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.1.0",
     "@npmcli/map-workspaces": "^2.0.3",
-    "@projectsophon/tsconfig": "^0.0.2",
+    "@projectsophon/tsconfig": "^0.1.0",
     "@solidstate/hardhat-4byte-uploader": "^1.0.2",
     "@typechain/ethers-v5": "10.1.0",
     "@typechain/hardhat": "^6.1.2",

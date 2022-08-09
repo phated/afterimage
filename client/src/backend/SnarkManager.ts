@@ -88,5 +88,5 @@ export class SnarkProverQueue {
       console.error(e);
       throw e;
     }
-  },
+  }
 }

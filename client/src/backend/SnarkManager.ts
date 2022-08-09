@@ -60,22 +60,7 @@ export class SnarkProverQueue {
   }>;
 
   constructor() {
-    this.#taskQueue = FastQueue.promise(
-      this,
-      async function (task: ZKPTask): Promise<SnarkJSProofAndSignals> {
-        try {
-          console.log(`proving ${task.taskId}`);
-          const res = await this.#snarkjs.groth16.fullProve(task.input, task.circuit, task.zkey);
-          console.log(`proved ${task.taskId}`);
-          return res;
-        } catch (e) {
-          console.error('error while calculating SNARK proof:');
-          console.error(e);
-          throw e;
-        }
-      },
-      1
-    );
+    this.#taskQueue = FastQueue.promise(this, this.execute, 1);
     this.#taskCount = 0;
     this.#snarkjs = Comlink.wrap(new Worker(new URL('/snarkjs.worker.js', import.meta.url)));
   }
@@ -91,4 +76,17 @@ export class SnarkProverQueue {
 
     return this.#taskQueue.push(task);
   }
+
+  async execute(task: ZKPTask): Promise<SnarkJSProofAndSignals> {
+    try {
+      console.log(`proving ${task.taskId}`);
+      const res = await this.#snarkjs.groth16.fullProve(task.input, task.circuit, task.zkey);
+      console.log(`proved ${task.taskId}`);
+      return res;
+    } catch (e) {
+      console.error('error while calculating SNARK proof:');
+      console.error(e);
+      throw e;
+    }
+  },
 }

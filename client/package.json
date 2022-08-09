@@ -23,10 +23,7 @@
     "wagmi": "^0.5.11"
   },
   "scripts": {
-    "start:dev": "GENERATE_SOURCEMAP=false webpack-dev-server --mode development --hot",
-    "start:prod": "GENERATE_SOURCEMAP=false NODE_ENV=production DEFAULT_RPC=wss://ws-kovan.optimism.io webpack-dev-server --mode development --open --hot",
-    "start:prodXdai": "GENERATE_SOURCEMAP=false NODE_ENV=production DEFAULT_RPC=https://optimism.gnosischain.com webpack-dev-server --mode development --open --hot",
-    "build": "GENERATE_SOURCEMAP=false NODE_ENV=production DEFAULT_RPC=wss://ws-kovan.optimism.io webpack --mode production"
+    "start": "vite"
   },
   "browserslist": {
     "production": [
@@ -42,28 +39,15 @@
     "node": "^16"
   },
   "devDependencies": {
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.7",
     "@types/react": "^18.0.15",
     "@types/react-dom": "^18.0.6",
     "@types/react-router-dom": "^5.3.3",
     "@types/styled-components": "^5.1.25",
     "@types/tinycolor2": "^1.4.3",
-    "@types/webpack-env": "^1.17.0",
+    "@vitejs/plugin-react": "^2.0.0",
     "autoprefixer": "^10.4.7",
-    "clean-webpack-plugin": "^4.0.0",
-    "copy-webpack-plugin": "^11.0.0",
-    "css-loader": "^6.7.1",
-    "file-loader": "^6.2.0",
-    "html-webpack-plugin": "^5.5.0",
     "postcss": "^8.4.14",
-    "postcss-loader": "7.0.1",
-    "react-refresh": "^0.14.0",
-    "style-loader": "^3.3.1",
     "tailwindcss": "^3.1.6",
-    "ts-loader": "^9.3.1",
-    "typescript-plugin-styled-components": "^2.0.0",
-    "webpack": "^5.73.0",
-    "webpack-cli": "^4.10.0",
-    "webpack-dev-server": "^4.9.3"
+    "vite": "^3.0.5"
   }
 }

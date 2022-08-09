@@ -16,18 +16,6 @@ export interface SnarkJSProofAndSignals {
   publicSignals: string[];
 }
 
-export interface InitSnarkInput {
-  x: string;
-  y: string;
-  blockhash: string;
-  possibleHashes: string[];
-  possibleHashesHash: string;
-  salt: string;
-  saltUpperBound: string;
-  gridUpperBound: string;
-  commitment: string;
-}
-
 export type ContractCallArgs = [
   [string, string], // proofA
   [

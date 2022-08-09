@@ -1,6 +1,7 @@
 import type { EthConnection } from '@zkgame/network';
 import { monomitter, type Monomitter } from '@darkforest_eth/events';
 import type { EthAddress } from '@darkforest_eth/types';
+import { buildContractCallArgs } from '@zkgame/snarks';
 import { EventEmitter } from 'events';
 import { ContractsAPI, makeContractsAPI } from './ContractsAPI';
 import {
@@ -13,11 +14,7 @@ import {
   type UnconfirmedBattlePlayer,
   type UnconfirmedClaimTreasure,
 } from '../_types/ContractAPITypes';
-import {
-  SnarkProverQueue,
-  buildContractCallArgs,
-  buildBattleContractCallArgs,
-} from './SnarkManager';
+import { SnarkProverQueue } from './SnarkManager';
 import { mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
 import BigInt from 'big-integer';
 import initCircuitPath from '@zkgame/snarks/init.wasm?url';
@@ -369,12 +366,11 @@ class GameManager extends EventEmitter {
       initCircuitZkey
     );
 
-    const callArgs = buildContractCallArgs(
+    const callArgs = [
       (latestBlockNumber - 31).toString(),
       latestBlockNumber.toString(),
-      proofAndSignalData.proof,
-      proofAndSignalData.publicSignals
-    );
+      ...buildContractCallArgs(proofAndSignalData.proof, proofAndSignalData.publicSignals),
+    ];
 
     console.log('callArgs', callArgs);
 
@@ -418,12 +414,11 @@ class GameManager extends EventEmitter {
       moveCircuitZkey
     );
 
-    const callArgs = buildContractCallArgs(
+    const callArgs = [
       (latestBlockNumber - 31).toString(),
       latestBlockNumber.toString(),
-      proofAndSignalData.proof,
-      proofAndSignalData.publicSignals
-    );
+      ...buildContractCallArgs(proofAndSignalData.proof, proofAndSignalData.publicSignals),
+    ];
 
     console.log('callArgs', callArgs);
 
@@ -528,11 +523,10 @@ class GameManager extends EventEmitter {
       battleCircuitZkey
     );
 
-    const callArgs = buildBattleContractCallArgs(
+    const callArgs = [
       player,
-      proofAndSignalData.proof,
-      proofAndSignalData.publicSignals
-    );
+      ...buildContractCallArgs(proofAndSignalData.proof, proofAndSignalData.publicSignals),
+    ];
 
     console.log('callArgs', callArgs);
 

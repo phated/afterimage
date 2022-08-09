@@ -1,5 +1,5 @@
 import { CONTRACT_ADDRESS } from '@zkgame/contracts';
-import { Transaction, TxIntent, EthAddress } from '@darkforest_eth/types';
+import type { Transaction, TxIntent, EthAddress } from '@darkforest_eth/types';
 import { address } from '../utils';
 import type { ZKGame } from '@zkgame/typechain';
 import {
@@ -10,26 +10,24 @@ import {
   TxExecutor,
 } from '@zkgame/network';
 import { EventEmitter } from 'events';
-import {
+import type {
   BigNumber,
   BigNumber as EthersBN,
-  Contract,
   ContractFunction /*, ethers, Event, providers*/,
   providers,
 } from 'ethers';
 import {
   ContractEvent,
-  ContractMethodName,
   ContractsAPIEvent,
-  SubmittedBattlePlayer,
-  SubmittedClaimTreasure,
-  SubmittedInitPlayer,
-  SubmittedMovePlayer,
-  SubmittedTx,
-  UnconfirmedBattlePlayer,
-  UnconfirmedClaimTreasure,
-  UnconfirmedInitPlayer,
-  UnconfirmedMovePlayer,
+  type SubmittedBattlePlayer,
+  type SubmittedClaimTreasure,
+  type SubmittedInitPlayer,
+  type SubmittedMovePlayer,
+  type SubmittedTx,
+  type UnconfirmedBattlePlayer,
+  type UnconfirmedClaimTreasure,
+  type UnconfirmedInitPlayer,
+  type UnconfirmedMovePlayer,
 } from '../_types/ContractAPITypes';
 import { loadCoreContract } from './Blockchain';
 

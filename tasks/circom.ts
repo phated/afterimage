@@ -4,7 +4,8 @@ import { subtask } from 'hardhat/config';
 import { TASK_CIRCOM_TEMPLATE } from 'hardhat-circom';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import camelcase from 'camelcase';
+
+const camelcase = require('camelcase');
 
 subtask(TASK_CIRCOM_TEMPLATE, circomTemplate);
 

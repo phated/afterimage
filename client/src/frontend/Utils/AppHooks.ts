@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
 import { Wrapper } from '../../backend/Utils/Wrapper';
-import GameManager from '../../backend/GameManager';
-import { useEmitterSubscribe, useWrappedEmitter } from './EmitterHooks';
+import type GameManager from '../../backend/GameManager';
+import { useEmitterSubscribe } from './EmitterHooks';
 import { createDefinedContext } from './createDefinedContext';
-import { CommitmentInfo, Tile, WorldCoords } from '../../utils';
+import type { CommitmentInfo, Tile } from '../../utils';
 
 export const { useDefinedContext: useGameManager, provider: GameManagerProvider } =
   createDefinedContext<GameManager>();

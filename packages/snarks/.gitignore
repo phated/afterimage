@@ -1,4 +1,8 @@
-*.r1cs
-*.vkey.json
-*.wasm
-*.zkey
+**/*.r1cs
+**/*.vkey.json
+**/*.wasm
+**/*.zkey
+**/*.d.ts
+**/*.d.ts.map
+**/*.js
+**/*.js.map

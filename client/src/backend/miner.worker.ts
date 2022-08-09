@@ -1,5 +1,5 @@
-import { getCommitment, WorldCoords } from '../utils';
-import BigInt, { BigInteger } from 'big-integer';
+import { getCommitment } from '../utils';
+import BigInt from 'big-integer';
 import { modPBigIntNative } from '@darkforest_eth/hashing';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

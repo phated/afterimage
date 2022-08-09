@@ -1,8 +1,8 @@
 import { DEFAULT_MAX_CALL_RETRIES } from '@darkforest_eth/constants';
-import { DiagnosticUpdater } from '@darkforest_eth/types';
-import { ContractFunction } from 'ethers';
+import type { DiagnosticUpdater } from '@darkforest_eth/types';
+import type { ContractFunction } from 'ethers';
 import retry, { AbortError } from 'p-retry';
-import { Queue, ThrottledConcurrentQueue } from './ThrottledConcurrentQueue';
+import { type Queue, ThrottledConcurrentQueue } from './ThrottledConcurrentQueue';
 
 /**
  * Instead of allowing the game to call `view` functions on the blockchain directly, all contract

@@ -1,7 +1,11 @@
 import { DEFAULT_MAX_CALL_RETRIES } from '@darkforest_eth/constants';
-import { address } from '@darkforest_eth/serde';
-import { AutoGasSetting, EthAddress, GasPrices, SignedMessage } from '@darkforest_eth/types';
-import { BigNumber, Contract, ContractInterface, providers, utils, Wallet } from 'ethers';
+import {
+  AutoGasSetting,
+  type EthAddress,
+  type GasPrices,
+  type SignedMessage,
+} from '@darkforest_eth/types';
+import { BigNumber, Contract, type ContractInterface, providers, utils, Wallet } from 'ethers';
 import stringify from 'json-stable-stringify';
 import retry from 'p-retry';
 import timeout from 'p-timeout';
@@ -207,7 +211,7 @@ export function verifySignature(
   if (!addr) {
     return false;
   }
-  return address(utils.verifyMessage(message, signature)) === addr;
+  return utils.verifyMessage(message, signature) === addr;
 }
 
 /**

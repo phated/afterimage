@@ -1,7 +1,8 @@
 import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
-import { EthAddress } from '@darkforest_eth/types';
-import BigInt, { BigInteger } from 'big-integer';
+import type { EthAddress } from '@darkforest_eth/types';
+import BigInt from 'big-integer';
+import type { BigInteger } from 'big-integer';
 
 import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
 import tinycolor from 'tinycolor2';

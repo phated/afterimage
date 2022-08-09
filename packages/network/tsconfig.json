@@ -1,20 +1,10 @@
 {
+  "extends": "@projectsophon/tsconfig",
   "include": ["src/**/*.ts"],
   "compilerOptions": {
-    "target": "es2019",
-    "module": "CommonJS",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
     "rootDir": "src",
     "outDir": "dist",
-    // Create .js.map files for each generated JS file
-    "sourceMap": true,
-    // Embed the original source into the sourceMap instead of pointing to source files
-    "inlineSources": true
+    "allowSyntheticDefaultImports": true
   },
   "typedocOptions": {
     "entryPoints": ["src/index.ts"],

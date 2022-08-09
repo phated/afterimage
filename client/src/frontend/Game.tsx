@@ -1,25 +1,34 @@
-import React, { useEffect, useRef, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import GameManager from '../backend/GameManager';
 import {
   DEV_TEST_PRIVATE_KEY,
-  Tile,
   TileKnowledge,
-  WorldCoords,
+  type WorldCoords,
   MINED_COLOR,
   UNMINED_COLOR,
   TREASURE_COLOR,
   isTreasure,
 } from '../utils';
-import { Tooltip, Text, Loading, Grid, Card } from '@nextui-org/react';
-import { EthConnection } from '@zkgame/network';
-import { EthAddress } from '@darkforest_eth/types';
+import { Text, Loading } from '@nextui-org/react';
+import type { EthConnection } from '@zkgame/network';
+import type { EthAddress } from '@darkforest_eth/types';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
 import { useMyWins, useSelfLoc, useTiles } from './Utils/AppHooks';
 import { useParams } from 'react-router-dom';
-import { getMaxListeners } from 'process';
-import { mimcSponge } from '@darkforest_eth/hashing';
+
+declare global {
+  interface Window {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    snarkjs: any;
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    gm: any;
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    pm: any;
+  }
+}
 
 const enum LoadingStep {
   NONE,

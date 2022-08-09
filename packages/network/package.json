@@ -2,6 +2,7 @@
   "name": "@zkgame/network",
   "version": "0.0.0",
   "license": "MIT",
+  "type": "module",
   "author": "0xPARC <ivan@0xPARC.org>",
   "engines": {
     "node": ">=16"
@@ -22,9 +23,7 @@
   },
   "dependencies": {
     "@darkforest_eth/constants": "6.7.29",
-    "@darkforest_eth/contracts": "6.7.29",
     "@darkforest_eth/events": "6.7.29",
-    "@darkforest_eth/serde": "6.7.29",
     "@darkforest_eth/types": "6.7.29",
     "async-mutex": "^0.3.2",
     "ethers": "^5.5.1",

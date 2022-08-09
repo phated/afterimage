@@ -360,7 +360,7 @@ class GameManager extends EventEmitter {
 
     console.log('snarkInp', snarkInput);
 
-    const proofAndSignalData = await this.snarkProverQueue.doProof(
+    const proofAndSignalData = await this.snarkProverQueue.prove(
       snarkInput,
       initCircuitPath,
       initCircuitZkey
@@ -408,7 +408,7 @@ class GameManager extends EventEmitter {
     };
     console.log('fullInput', fullInput);
 
-    const proofAndSignalData = await this.snarkProverQueue.doProof(
+    const proofAndSignalData = await this.snarkProverQueue.prove(
       fullInput,
       moveCircuitPath,
       moveCircuitZkey
@@ -517,7 +517,7 @@ class GameManager extends EventEmitter {
     };
     console.log('fullInput', fullInput);
 
-    const proofAndSignalData = await this.snarkProverQueue.doProof(
+    const proofAndSignalData = await this.snarkProverQueue.prove(
       fullInput,
       battleCircuitPath,
       battleCircuitZkey

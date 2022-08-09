@@ -3,8 +3,6 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
 import Game from './Game';
 
-const isProd = process.env.NODE_ENV === 'production';
-
 function App() {
   return (
     <>

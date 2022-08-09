@@ -16,8 +16,8 @@ export async function loadCoreContract(
 }
 
 export function getEthConnection(): Promise<EthConnection> {
-  const isProd = process.env.NODE_ENV === 'production';
-  const defaultUrl = process.env.DEFAULT_RPC as string;
+  const isProd = import.meta.env.MODE === 'production';
+  const defaultUrl = import.meta.env.VITE_DEFAULT_RPC;
 
   let url: string;
 

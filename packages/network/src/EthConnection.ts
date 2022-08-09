@@ -1,17 +1,16 @@
 import { DEFAULT_GAS_PRICES, GAS_PRICES_INTERVAL_MS } from '@darkforest_eth/constants';
-import { Monomitter, monomitter } from '@darkforest_eth/events';
-import { address } from '@darkforest_eth/serde';
-import {
+import { type Monomitter, monomitter } from '@darkforest_eth/events';
+import type {
   AutoGasSetting,
   DiagnosticUpdater,
   EthAddress,
   GasPrices,
   SignedMessage,
 } from '@darkforest_eth/types';
-import { BigNumber, Contract, EventFilter, providers, Wallet } from 'ethers';
+import { BigNumber, Contract, type EventFilter, providers, Wallet } from 'ethers';
 import stringify from 'json-stable-stringify';
 import debounce from 'just-debounce';
-import { ContractLoader } from './Contracts';
+import type { ContractLoader } from './Contracts';
 import { callWithRetry, getGasSettingGwei, makeProvider, waitForTransaction } from './Network';
 import { getAutoGasPrices } from './xDaiApi';
 
@@ -170,13 +169,13 @@ export class EthConnection {
    */
   public async setAccount(skey: string): Promise<void> {
     this.signer = new Wallet(skey, this.provider);
-    this.balance = await this.loadBalance(address(this.signer.address));
+    this.balance = await this.loadBalance(this.signer.address as EthAddress);
     await this.reloadContracts();
   }
 
   private async refreshBalance() {
     if (this.signer) {
-      const balance = await this.loadBalance(address(this.signer.address));
+      const balance = await this.loadBalance(this.signer.address as EthAddress);
       this.balance = balance;
       this.myBalance$.publish(balance);
     }
@@ -312,7 +311,7 @@ export class EthConnection {
       return undefined;
     }
 
-    return address(this.signer.address);
+    return this.signer.address as EthAddress;
   }
 
   /**
@@ -364,7 +363,7 @@ export class EthConnection {
 
     return {
       signature,
-      sender: address(this.signer.address),
+      sender: this.signer.address as EthAddress,
       message: obj,
     };
   }

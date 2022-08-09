@@ -1,4 +1,4 @@
-import {
+import type {
   AutoGasSetting,
   DiagnosticUpdater,
   NetworkEvent,
@@ -8,12 +8,15 @@ import {
   TxIntent,
 } from '@darkforest_eth/types';
 import { Mutex } from 'async-mutex';
-import { providers } from 'ethers';
+import type { providers } from 'ethers';
 import deferred from 'p-defer';
 import timeout from 'p-timeout';
-import { EthConnection } from './EthConnection';
+import type { EthConnection } from './EthConnection';
 import { gweiToWei, waitForTransaction } from './Network';
-import { ConcurrentQueueConfiguration, ThrottledConcurrentQueue } from './ThrottledConcurrentQueue';
+import {
+  type ConcurrentQueueConfiguration,
+  ThrottledConcurrentQueue,
+} from './ThrottledConcurrentQueue';
 
 /**
  * Returns either a string that represents the gas price we should use by default for transactions,

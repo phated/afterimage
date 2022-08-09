@@ -1,4 +1,4 @@
-import { Callback, Monomitter } from '@darkforest_eth/events';
+import type { Callback, Monomitter } from '@darkforest_eth/events';
 import { useEffect, useState } from 'react';
 import { Wrapper } from '../../backend/Utils/Wrapper';
 

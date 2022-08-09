@@ -1,5 +1,5 @@
 import * as React from 'react';
-import ReactDOM from 'react-dom';
+import * as ReactDOM from 'react-dom';
 import App from './App';
 import './index.css';
 import { createTheme, NextUIProvider } from '@nextui-org/react';

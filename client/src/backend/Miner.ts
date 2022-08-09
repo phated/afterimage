@@ -1,13 +1,13 @@
-import { RawCommitment, WorldCoords } from '../utils';
+import type { RawCommitment } from '../utils';
 import GameManager from './GameManager';
-import BigInt, { BigInteger } from 'big-integer';
+import BigInt from 'big-integer';
 
 function defaultWorker() {
   return new Worker(new URL('./miner.worker.ts', import.meta.url));
 }
 
 export class MinerManager {
-  private miner: Worker;
+  private miner!: Worker;
 
   private isExploring = false;
 

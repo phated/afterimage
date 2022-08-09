@@ -2,6 +2,7 @@
   "name": "zk-game-starter",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "description": "Monorepo for building crypto-native games using Zero Knowledge proofs'",
   "license": "GPL-3.0",
   "workspaces": [
@@ -12,18 +13,22 @@
     "client"
   ],
   "scripts": {
+    "prepare": "workspaces-to-typescript-project-references --tsconfigPath tsconfig.ref.json",
     "start": "hardhat node --hostname 0.0.0.0",
     "compile": "hardhat compile",
     "circom:dev": "hardhat circom --debug --verbose",
     "circom:prod": "hardhat circom --verbose",
-    "test": "hardhat test"
+    "test": "hardhat test",
+    "watch": "tsc -b client/tsconfig.ref.json -w",
+    "clean": "tsc -b client/tsconfig.ref.json --clean"
   },
   "devDependencies": {
+    "@monorepo-utils/workspaces-to-typescript-project-references": "^2.7.4",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.2",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.1.0",
     "@npmcli/map-workspaces": "^2.0.3",
-    "@projectsophon/tsconfig": "^0.1.0",
+    "@projectsophon/tsconfig": "^0.1.1",
     "@solidstate/hardhat-4byte-uploader": "^1.0.2",
     "@typechain/ethers-v5": "10.1.0",
     "@typechain/hardhat": "^6.1.2",
@@ -33,7 +38,7 @@
     "hardhat-contract-sizer": "^2.6.1",
     "hardhat-diamond-abi": "^3.0.1",
     "hardhat-settings": "^1.0.0",
-    "ts-node": "^8.0.0",
+    "ts-node": "^10.9.1",
     "typechain": "8.1.0",
     "typescript": "4.7.x"
   }

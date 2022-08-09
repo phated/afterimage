@@ -1,6 +1,6 @@
-import { Monomitter, monomitter } from '@darkforest_eth/events';
-import { WorldCoords } from '@darkforest_eth/types';
-import GameManager from './GameManager';
+import { type Monomitter, monomitter } from '@darkforest_eth/events';
+import type { WorldCoords } from '@darkforest_eth/types';
+import type GameManager from './GameManager';
 
 type dangerousHTML = {
   __html: string;

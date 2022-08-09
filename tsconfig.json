@@ -1,7 +1,15 @@
 {
   "extends": "@projectsophon/tsconfig",
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true // TODO: Consider upstreaming into @projectsophon/tsconfig
-  },
-  "include": ["./hardhat.config.ts", "./packages/typechain/hardhat.d.ts"]
+  "include": ["./hardhat.config.ts", "./packages/typechain/hardhat.d.ts"],
+  "ts-node": {
+    "transpileOnly": true,
+    "moduleTypes": {
+      "hardhat.config.ts": "cjs",
+      "tasks/**/*.ts": "cjs"
+    },
+    "compilerOptions": {
+      "noEmit": true,
+      "preserveValueImports": false
+    }
+  }
 }

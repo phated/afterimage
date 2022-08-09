@@ -1,6 +1,7 @@
 {
   "name": "@zkgame/contracts",
   "version": "0.0.0",
+  "type": "module",
   "files": [
     "index.ts",
     "index.d.ts",

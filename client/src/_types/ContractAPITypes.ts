@@ -1,7 +1,4 @@
-import { ContractCallArgs } from '../backend/SnarkManager';
-import { WorldCoords } from '../utils';
-
-export const enum ContractEvent {
+export enum ContractEvent {
   BattleUpdated = 'BattleUpdated',
   PlayerUpdated = 'PlayerUpdated',
 }
@@ -13,7 +10,7 @@ export enum ContractMethodName {
   CLAIM_TREASURE = 'claimTreasure',
 }
 
-export const enum ContractsAPIEvent {
+export enum ContractsAPIEvent {
   PlayerUpdated = 'PlayerUpdated',
   BattleUpdated = 'BattleUpdated',
 

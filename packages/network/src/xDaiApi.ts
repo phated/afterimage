@@ -3,7 +3,7 @@ import {
   GAS_PRICE_API,
   MAX_AUTO_GAS_PRICE_GWEI,
 } from '@darkforest_eth/constants';
-import { GasPrices } from '@darkforest_eth/types';
+import type { GasPrices } from '@darkforest_eth/types';
 
 /**
  * Gets the current gas prices from xDai's price oracle. If the oracle is broken, return some sane

@@ -1,4 +1,4 @@
-declare module '@zkgame/snarks/*.wasm' {
+declare module '@zkgame/snarks/*.wasm?url' {
   const path: string;
   export default path;
 }

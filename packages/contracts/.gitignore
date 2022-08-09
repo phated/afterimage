@@ -1,3 +1,5 @@
-*.json
+Diamond.json
+Initializer.json
+ZKGame.json
 *.d.ts
 *.map

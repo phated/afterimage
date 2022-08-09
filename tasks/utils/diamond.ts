@@ -17,13 +17,14 @@
  */
 
 import type { JsonFragment } from "@ethersproject/abi";
-import chalk from "chalk";
-import Table from "cli-table3";
+import { gray, green, blue, red } from "chalk";
 import { constants, Contract, utils } from "ethers";
 import fetch from "node-fetch";
 import * as readline from "readline";
 //@ts-ignore because it might not exist before compile
 import type { IDiamondWritable } from "@zkgame/typechain/@solidstate/contracts/proxy/diamond/writable/IDiamondWritable";
+
+const Table = require("cli-table3");
 
 export const enum FacetCutAction {
   Add = 0,
@@ -262,20 +263,20 @@ export class DiamondChanges {
     // be the most concerned about (and ignored the least)
 
     for (const [contractName, signature] of this.changes.ignored) {
-      table.push([chalk.gray("Ignored"), signature, contractName]);
+      table.push([gray("Ignored"), signature, contractName]);
     }
 
     for (const [contractName, signature] of this.changes.replaced) {
-      table.push([chalk.green("Replaced"), signature, contractName]);
+      table.push([green("Replaced"), signature, contractName]);
     }
 
     for (const [contractName, signature] of this.changes.added) {
-      table.push([chalk.blue("Added"), signature, contractName]);
+      table.push([blue("Added"), signature, contractName]);
     }
 
     for (const selector of this.changes.removed) {
       const signature = await this.lookupSelector(selector);
-      table.push([chalk.red("Removed"), signature, ""]);
+      table.push([red("Removed"), signature, ""]);
     }
 
     if (table.length > 0) {

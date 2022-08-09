@@ -1,46 +1,39 @@
-import { EthConnection } from '@zkgame/network';
-import { monomitter, Monomitter, Subscription } from '@darkforest_eth/events';
-import { perlin } from '@darkforest_eth/hashing';
-import { EthAddress, WorldCoords } from '@darkforest_eth/types';
+import type { EthConnection } from '@zkgame/network';
+import { monomitter, type Monomitter } from '@darkforest_eth/events';
+import type { EthAddress } from '@darkforest_eth/types';
 import { EventEmitter } from 'events';
 import { ContractsAPI, makeContractsAPI } from './ContractsAPI';
 import {
   ContractMethodName,
   ContractsAPIEvent,
-  isUnconfirmedMovePlayer,
-  SubmittedTx,
-  TxIntent,
-  UnconfirmedMovePlayer,
-  UnconfirmedInitPlayer,
-  UnconfirmedBattlePlayer,
-  UnconfirmedClaimTreasure,
+  type SubmittedTx,
+  type TxIntent,
+  type UnconfirmedMovePlayer,
+  type UnconfirmedInitPlayer,
+  type UnconfirmedBattlePlayer,
+  type UnconfirmedClaimTreasure,
 } from '../_types/ContractAPITypes';
-import { hexValue } from 'ethers/lib/utils';
-import { BigNumber } from 'ethers';
 import {
   SnarkProverQueue,
-  InitSnarkInput,
-  SnarkJSProofAndSignals,
   buildContractCallArgs,
   buildBattleContractCallArgs,
 } from './SnarkManager';
-import { mimcHash, mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
-import BigInt, { BigInteger } from 'big-integer';
-import initCircuitPath from '@zkgame/snarks/init.wasm';
+import { mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
+import BigInt from 'big-integer';
+import initCircuitPath from '@zkgame/snarks/init.wasm?url';
 import initCircuitZkey from '@zkgame/snarks/init.zkey';
-import moveCircuitPath from '@zkgame/snarks/move.wasm';
+import moveCircuitPath from '@zkgame/snarks/move.wasm?url';
 import moveCircuitZkey from '@zkgame/snarks/move.zkey';
-import battleCircuitPath from '@zkgame/snarks/battle.wasm';
+import battleCircuitPath from '@zkgame/snarks/battle.wasm?url';
 import battleCircuitZkey from '@zkgame/snarks/battle.zkey';
 import {
-  address,
   getRandomActionId,
-  RawCommitment,
-  Tile,
+  type RawCommitment,
+  type Tile,
   TileKnowledge,
-  CommitmentInfo,
-  OptimisticCommitmentInfo,
-  CommitmentMetadata,
+  type CommitmentInfo,
+  type OptimisticCommitmentInfo,
+  type CommitmentMetadata,
   power255,
 } from '../utils';
 import { MinerManager } from './Miner';
@@ -77,8 +70,8 @@ class GameManager extends EventEmitter {
   private readonly ethConnection: EthConnection;
   private readonly snarkProverQueue: SnarkProverQueue;
 
-  private selfInfo: CommitmentInfo;
-  private optimisticSelfInfo: OptimisticCommitmentInfo;
+  private selfInfo!: CommitmentInfo;
+  private optimisticSelfInfo!: OptimisticCommitmentInfo;
 
   private readonly GRID_UPPER_BOUND: number;
   private readonly SALT_UPPER_BOUND: number;

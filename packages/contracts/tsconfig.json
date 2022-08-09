@@ -1,11 +1,6 @@
 {
   "extends": "@projectsophon/tsconfig",
-  "compilerOptions": {
-    "noEmit": true,
-    "jsx": "react",
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["src/_types/**/*.d.ts", "src/**/*", "embedded_plugins/*", "plugins/*"],
+  "include": ["index.ts"],
   "typedocOptions": {
     "entryPoints": ["src"],
     "out": "docs",

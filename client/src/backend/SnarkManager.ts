@@ -45,19 +45,16 @@ type ZKPTask = {
   input: unknown;
   circuit: string; // path
   zkey: string; // path
-
-  onSuccess: (proof: SnarkJSProofAndSignals) => void;
-  onError: (e: Error) => void;
 };
 
 type SnarkInput = InitSnarkInput | MoveSnarkInput | BattleSnarkInput;
 
 export class SnarkProverQueue {
-  private taskQueue: FastQueue.queue;
+  private taskQueue: FastQueue.queueAsPromised<ZKPTask, SnarkJSProofAndSignals>;
   private taskCount: number;
 
   constructor() {
-    this.taskQueue = FastQueue(this.execute.bind(this), 1);
+    this.taskQueue = FastQueue.promise(this, this.execute, 1);
     this.taskCount = 0;
   }
 
@@ -74,30 +71,19 @@ export class SnarkProverQueue {
       taskId,
     };
 
-    return new Promise<SnarkJSProofAndSignals>((resolve, reject) => {
-      this.taskQueue.push(task, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+    return this.taskQueue.push(task);
   }
 
-  private async execute(
-    task: ZKPTask,
-    cb: (err: Error | null, result: SnarkJSProofAndSignals | null) => void
-  ) {
+  private async execute(task: ZKPTask): Promise<SnarkJSProofAndSignals> {
     try {
       console.log(`proving ${task.taskId}`);
       const res = await window.snarkjs.groth16.fullProve(task.input, task.circuit, task.zkey);
       console.log(`proved ${task.taskId}`);
-      cb(null, res);
+      return res;
     } catch (e) {
       console.error('error while calculating SNARK proof:');
       console.error(e);
-      cb(e as Error, null);
+      throw e;
     }
   }
 }

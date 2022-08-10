@@ -1,6 +1,4 @@
 import type { RawCommitment } from '../utils';
-import GameManager from './GameManager';
-import BigInt from 'big-integer';
 
 function defaultWorker() {
   return new Worker(new URL('./miner.worker.ts', import.meta.url), { type: 'module' });

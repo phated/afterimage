@@ -21,8 +21,8 @@ import { useParams } from 'react-router-dom';
 
 declare global {
   interface Window {
-    gm: GameManager;
-    pm: PluginManager;
+    gm: GameManager | undefined;
+    pm: PluginManager | undefined;
   }
 }
 

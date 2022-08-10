@@ -1,4 +1,5 @@
 import FastQueue from 'fastq';
+import * as Comlink from 'comlink';
 import type { SnarkJSProofAndSignals } from '@zkgame/snarks';
 
 interface InitSnarkInput {
@@ -40,30 +41,32 @@ interface BattleSnarkInput {
   yourCommitment: string;
 }
 
+type SnarkInput = InitSnarkInput | MoveSnarkInput | BattleSnarkInput;
+
 type ZKPTask = {
   taskId: number;
-  input: unknown;
+  input: SnarkInput;
   circuit: string; // path
   zkey: string; // path
 };
 
-type SnarkInput = InitSnarkInput | MoveSnarkInput | BattleSnarkInput;
-
 export class SnarkProverQueue {
-  private taskQueue: FastQueue.queueAsPromised<ZKPTask, SnarkJSProofAndSignals>;
-  private taskCount: number;
+  #taskQueue: FastQueue.queueAsPromised<ZKPTask, SnarkJSProofAndSignals>;
+  #taskCount: number;
+  #snarkjs: Comlink.Remote<{
+    groth16: {
+      fullProve: (input: SnarkInput, circuit: string, zkey: string) => SnarkJSProofAndSignals;
+    } & Comlink.ProxyMarked;
+  }>;
 
   constructor() {
-    this.taskQueue = FastQueue.promise(this, this.execute, 1);
-    this.taskCount = 0;
+    this.#taskQueue = FastQueue.promise(this, this.execute, 1);
+    this.#taskCount = 0;
+    this.#snarkjs = Comlink.wrap(new Worker(new URL('/snarkjs.worker.js', import.meta.url)));
   }
 
-  public doProof(
-    input: SnarkInput,
-    circuit: string,
-    zkey: string
-  ): Promise<SnarkJSProofAndSignals> {
-    const taskId = this.taskCount++;
+  prove(input: SnarkInput, circuit: string, zkey: string): Promise<SnarkJSProofAndSignals> {
+    const taskId = this.#taskCount++;
     const task = {
       input,
       circuit,
@@ -71,13 +74,13 @@ export class SnarkProverQueue {
       taskId,
     };
 
-    return this.taskQueue.push(task);
+    return this.#taskQueue.push(task);
   }
 
-  private async execute(task: ZKPTask): Promise<SnarkJSProofAndSignals> {
+  async execute(task: ZKPTask): Promise<SnarkJSProofAndSignals> {
     try {
       console.log(`proving ${task.taskId}`);
-      const res = await window.snarkjs.groth16.fullProve(task.input, task.circuit, task.zkey);
+      const res = await this.#snarkjs.groth16.fullProve(task.input, task.circuit, task.zkey);
       console.log(`proved ${task.taskId}`);
       return res;
     } catch (e) {

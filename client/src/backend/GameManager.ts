@@ -18,11 +18,11 @@ import { SnarkProverQueue } from './SnarkManager';
 import { mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
 import BigInt from 'big-integer';
 import initCircuitPath from '@zkgame/snarks/init.wasm?url';
-import initCircuitZkey from '@zkgame/snarks/init.zkey';
+import initCircuitZkey from '@zkgame/snarks/init.zkey?url';
 import moveCircuitPath from '@zkgame/snarks/move.wasm?url';
-import moveCircuitZkey from '@zkgame/snarks/move.zkey';
+import moveCircuitZkey from '@zkgame/snarks/move.zkey?url';
 import battleCircuitPath from '@zkgame/snarks/battle.wasm?url';
-import battleCircuitZkey from '@zkgame/snarks/battle.zkey';
+import battleCircuitZkey from '@zkgame/snarks/battle.zkey?url';
 import {
   getRandomActionId,
   type RawCommitment,

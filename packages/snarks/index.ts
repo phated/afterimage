@@ -24,10 +24,7 @@ export type ContractCallArgs = [
     [string, string]
   ],
   [string, string], // proofC
-  [
-    string, // hashed whitelist key
-    string // recipient address
-  ]
+  string[] // public signals
 ];
 
 /**

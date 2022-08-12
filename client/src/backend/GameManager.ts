@@ -1,7 +1,7 @@
 import type { EthConnection } from '@zkgame/network';
 import { monomitter, type Monomitter } from '@darkforest_eth/events';
 import type { EthAddress } from '@darkforest_eth/types';
-import { buildContractCallArgs } from '@zkgame/snarks';
+import { buildContractCallArgs } from '@projectsophon/snarkjs-helpers';
 import { EventEmitter } from 'events';
 import { ContractsAPI, makeContractsAPI } from './ContractsAPI';
 import {

@@ -2,8 +2,6 @@
   "name": "@zkgame/snarks",
   "version": "0.0.0",
   "type": "module",
-  "main": "index.js",
-  "types": "index.d.ts",
   "files": [
     "*.r1cs",
     "*.vkey.json",

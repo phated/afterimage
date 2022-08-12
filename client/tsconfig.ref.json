@@ -9,9 +9,6 @@
     },
     {
       "path": "../packages/contracts/tsconfig.ref.json"
-    },
-    {
-      "path": "../packages/snarks/tsconfig.ref.json"
     }
   ],
   "compilerOptions": {

@@ -6,6 +6,7 @@
   "dependencies": {
     "@darkforest_eth/events": "^6.7.29",
     "@darkforest_eth/hashing": "^6.7.29",
+    "@projectsophon/snarkjs-helpers": "^0.1.0",
     "@zkgame/network": "0.0.0",
     "@zkgame/typechain": "0.0.0",
     "@zkgame/contracts": "0.0.0",

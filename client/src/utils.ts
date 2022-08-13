@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
-import type { EthAddress } from '@darkforest_eth/types';
+import type { EthAddress } from '@projectsophon/types';
+import { address } from '@projectsophon/serde';
 import BigInt from 'big-integer';
 import type { BigInteger } from 'big-integer';
 
@@ -125,26 +126,6 @@ export type PlayerInfo = {
   canMoveSnow: boolean;
   canPutAnything: boolean;
 };
-
-/**
- * Converts a string to an `EthAddress`: a 0x-prefixed all lowercase hex string
- * of 40 hex characters. An object of the `EthAddress` type should only ever be
- * initialized through this constructor-like method. Throws if the provided
- * string cannot be parsed as an Ethereum address.
- *
- * @param str An address-like `string`
- */
-export function address(str: string): EthAddress {
-  let ret = str.toLowerCase();
-  if (ret.slice(0, 2) === '0x') {
-    ret = ret.slice(2);
-  }
-  for (const c of ret) {
-    if ('0123456789abcdef'.indexOf(c) === -1) throw new Error('not a valid address');
-  }
-  if (ret.length !== 40) throw new Error('not a valid address');
-  return `0x${ret}` as EthAddress;
-}
 
 export function getCommitment(x: number, y: number, blockhash: BigInteger, salt: number) {
   return mimcSponge([BigInt(x), BigInt(y), blockhash, BigInt(salt)], 1, 220, 123)[0];

@@ -1,14 +1,12 @@
 import { CONTRACT_ADDRESS } from '@zkgame/contracts';
-import type { Transaction, TxIntent, EthAddress } from '@darkforest_eth/types';
-import { address } from '../utils';
-import type { ZKGame } from '@zkgame/typechain';
+import type { Transaction, TxIntent, EthAddress } from '@projectsophon/types';
 import {
   ContractCaller,
-  EthConnection,
+  ConnectionManager,
+  ContractManager,
   ethToWei,
-  // QueuedTransaction,
   TxExecutor,
-} from '@zkgame/network';
+} from '@projectsophon/network';
 import { EventEmitter } from 'events';
 import type {
   BigNumber,
@@ -17,7 +15,6 @@ import type {
   providers,
 } from 'ethers';
 import {
-  ContractEvent,
   ContractsAPIEvent,
   type SubmittedBattlePlayer,
   type SubmittedClaimTreasure,
@@ -57,16 +54,19 @@ export class ContractsAPI extends EventEmitter {
    * Our connection to the blockchain. In charge of low level networking, and also of the burner
    * wallet.
    */
-  private ethConnection: EthConnection;
+  private ethConnection: ConnectionManager;
 
-  get coreContract() {
-    return this.ethConnection.getContract<ZKGame>(CONTRACT_ADDRESS);
+  private contractManager: ContractManager;
+
+  async getContract() {
+    return await this.contractManager.loadContract(CONTRACT_ADDRESS, loadCoreContract);
   }
 
-  public constructor(ethConnection: EthConnection) {
+  constructor(ethConnection: ConnectionManager) {
     super();
     this.contractCaller = new ContractCaller();
     this.ethConnection = ethConnection;
+    this.contractManager = new ContractManager(ethConnection);
     this.txExecutor = new TxExecutor(
       ethConnection,
       this.getGasFeeForTransaction.bind(this),
@@ -74,8 +74,6 @@ export class ContractsAPI extends EventEmitter {
       this.beforeTransaction.bind(this),
       this.afterTransaction.bind(this)
     );
-
-    this.setupEventListeners();
   }
 
   /**
@@ -99,10 +97,11 @@ export class ContractsAPI extends EventEmitter {
     intent: TxIntent,
     overrides?: providers.TransactionRequest
   ): Promise<void> {
-    const address = this.ethConnection.getAddress();
-    if (!address) throw new Error("can't send a transaction, no signer");
+    if (!this.ethConnection.signer) {
+      throw new Error("can't send a transaction, no signer");
+    }
 
-    const balance = await this.ethConnection.loadBalance(address);
+    const balance = await this.ethConnection.signer.getBalance();
 
     if (balance.lt(ContractsAPI.MIN_BALANCE)) {
       throw new Error('xDAI balance too low!');
@@ -122,65 +121,23 @@ export class ContractsAPI extends EventEmitter {
     this.emit(ContractsAPIEvent.TxSubmitted, txDiagnosticInfo);
   }
 
-  public destroy(): void {
-    this.removeEventListeners();
-  }
-
   private makeCall<T>(contractViewFunction: ContractFunction<T>, args: unknown[] = []): Promise<T> {
     return this.contractCaller.makeCall(contractViewFunction, args);
   }
 
-  public async setupEventListeners(): Promise<void> {
-    const { coreContract } = this;
-
-    const filter = {
-      address: coreContract.address,
-      topics: [
-        [
-          coreContract.filters.PlayerUpdated(null, null).topics,
-          coreContract.filters.BattleUpdated(null, null).topics,
-        ].map((topicsOrUndefined) => (topicsOrUndefined || [])[0]),
-      ] as Array<string | Array<string>>,
-    };
-
-    const eventHandlers = {
-      [ContractEvent.PlayerUpdated]: (
-        rawAddress: string,
-        commitment: BigNumber,
-        blockNum: BigNumber
-      ) => {
-        this.emit(
-          ContractsAPIEvent.PlayerUpdated,
-          address(rawAddress),
-          commitment.toBigInt(),
-          blockNum.toBigInt()
-        );
-      },
-      [ContractEvent.BattleUpdated]: (player1: string, player2: string) => {
-        this.emit(ContractsAPIEvent.BattleUpdated, address(player1), address(player2));
-      },
-    };
-
-    this.ethConnection.subscribeToContractEvents(coreContract, eventHandlers, filter);
-  }
-
-  public removeEventListeners(): void {
-    const { coreContract } = this;
-
-    coreContract.removeAllListeners(ContractEvent.PlayerUpdated);
-    coreContract.removeAllListeners(ContractEvent.BattleUpdated);
-  }
-
   public async getGridUpperBound(): Promise<number> {
-    return (await this.makeCall<EthersBN>(this.coreContract.GRID_UPPER_BOUND)).toNumber();
+    const contract = await this.getContract();
+    return (await this.makeCall<EthersBN>(contract.GRID_UPPER_BOUND)).toNumber();
   }
 
   public async getSaltUpperBound(): Promise<number> {
-    return (await this.makeCall<EthersBN>(this.coreContract.SALT_UPPER_BOUND)).toNumber();
+    const contract = await this.getContract();
+    return (await this.makeCall<EthersBN>(contract.SALT_UPPER_BOUND)).toNumber();
   }
 
   public async getWins(address: EthAddress): Promise<number> {
-    return (await this.makeCall<EthersBN>(this.coreContract.getWins, [address])).toNumber();
+    const contract = await this.getContract();
+    return (await this.makeCall<EthersBN>(contract.getWins, [address])).toNumber();
   }
 
   public async initPlayer(action: UnconfirmedInitPlayer) {
@@ -188,8 +145,10 @@ export class ContractsAPI extends EventEmitter {
       throw new Error('no signer, cannot execute tx');
     }
 
+    const contract = await this.getContract();
+
     const tx = await this.txExecutor.queueTransaction({
-      contract: this.coreContract,
+      contract,
       methodName: action.methodName,
       args: action.callArgs,
     });
@@ -207,8 +166,10 @@ export class ContractsAPI extends EventEmitter {
       throw new Error('no signer, cannot execute tx');
     }
 
+    const contract = await this.getContract();
+
     const tx = await this.txExecutor.queueTransaction({
-      contract: this.coreContract,
+      contract,
       methodName: action.methodName,
       args: action.callArgs,
     });
@@ -226,8 +187,10 @@ export class ContractsAPI extends EventEmitter {
       throw new Error('no signer, cannot execute tx');
     }
 
+    const contract = await this.getContract();
+
     const tx = await this.txExecutor.queueTransaction({
-      contract: this.coreContract,
+      contract,
       methodName: action.methodName,
       args: action.callArgs,
     });
@@ -241,7 +204,8 @@ export class ContractsAPI extends EventEmitter {
   }
 
   public async getBattlePower(player: EthAddress): Promise<bigint[]> {
-    return (await this.makeCall<BigNumber[]>(this.coreContract.getBattlePower, [player])).map((x) =>
+    const contract = await this.getContract();
+    return (await this.makeCall<BigNumber[]>(contract.getBattlePower, [player])).map((x) =>
       x.toBigInt()
     );
   }
@@ -251,8 +215,10 @@ export class ContractsAPI extends EventEmitter {
       throw new Error('no signer, cannot execute tx');
     }
 
+    const contract = await this.getContract();
+
     const tx = await this.txExecutor.queueTransaction({
-      contract: this.coreContract,
+      contract,
       methodName: action.methodName,
       args: action.callArgs,
     });
@@ -282,10 +248,4 @@ export class ContractsAPI extends EventEmitter {
         throw e;
       });
   }
-}
-
-export async function makeContractsAPI(ethConnection: EthConnection): Promise<ContractsAPI> {
-  // Could turn this into an array and iterate, but I like the explicitness
-  await ethConnection.loadContract(CONTRACT_ADDRESS, loadCoreContract);
-  return new ContractsAPI(ethConnection);
 }

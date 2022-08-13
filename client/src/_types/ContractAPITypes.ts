@@ -1,8 +1,3 @@
-export enum ContractEvent {
-  BattleUpdated = 'BattleUpdated',
-  PlayerUpdated = 'PlayerUpdated',
-}
-
 export enum ContractMethodName {
   MOVE_PLAYER = 'movePlayer',
   INIT_PLAYER = 'initPlayer',
@@ -11,9 +6,6 @@ export enum ContractMethodName {
 }
 
 export enum ContractsAPIEvent {
-  PlayerUpdated = 'PlayerUpdated',
-  BattleUpdated = 'BattleUpdated',
-
   TxInitFailed = 'TxInitFailed',
   TxSubmitted = 'TxSubmitted',
   TxConfirmed = 'TxConfirmed',

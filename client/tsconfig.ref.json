@@ -2,9 +2,6 @@
   "extends": "./tsconfig.json",
   "references": [
     {
-      "path": "../packages/network/tsconfig.ref.json"
-    },
-    {
       "path": "../packages/typechain/tsconfig.ref.json"
     },
     {

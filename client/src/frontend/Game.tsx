@@ -12,8 +12,8 @@ import {
   isTreasure,
 } from '../utils';
 import { Text, Loading } from '@nextui-org/react';
-import type { EthConnection } from '@zkgame/network';
-import type { EthAddress } from '@darkforest_eth/types';
+import type { ConnectionManager } from '@projectsophon/network';
+import type { EthAddress } from '@projectsophon/types';
 import { getEthConnection } from '../backend/Blockchain';
 import { PluginManager } from '../backend/PluginManager';
 import { useMyWins, useSelfLoc, useTiles } from './Utils/AppHooks';
@@ -39,7 +39,7 @@ export default function Game() {
 
   const [gameManager, setGameManager] = useState<GameManager | undefined>();
   const [pluginManager, setPluginManager] = useState<PluginManager | undefined>();
-  const [ethConnection, setEthConnection] = useState<EthConnection | undefined>();
+  const [ethConnection, setEthConnection] = useState<ConnectionManager | undefined>();
   const [step, setStep] = useState(LoadingStep.NONE);
   const [error, setError] = useState('no errors');
   const tiles = useTiles(gameManager);
@@ -132,12 +132,14 @@ export default function Game() {
   }, [canvasRef.current, gameManager, currentEnemy]);
 
   useEffect(() => {
-    getEthConnection()
-      .then(async (ethConnection) => {
-        ethConnection.setAccount(privateKey);
-        setEthConnection(ethConnection);
-        setStep(LoadingStep.LOADED_ETH_CONNECTION);
-        const gm = await GameManager.create(ethConnection);
+    const ethConnection = getEthConnection();
+
+    ethConnection.privateKey = privateKey;
+    setEthConnection(ethConnection);
+    setStep(LoadingStep.LOADED_ETH_CONNECTION);
+    // TODO: Deal with this weird promise junk
+    GameManager.create(ethConnection)
+      .then((gm) => {
         window.gm = gm;
         setGameManager(gm);
         setStep(LoadingStep.LOADED_GAME_MANAGER);

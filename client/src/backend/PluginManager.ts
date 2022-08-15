@@ -1,4 +1,4 @@
-import { type Monomitter, monomitter } from '@darkforest_eth/events';
+import { type Monomitter, monomitter } from '@projectsophon/events';
 import type { WorldCoords } from '@projectsophon/types';
 import type GameManager from './GameManager';
 

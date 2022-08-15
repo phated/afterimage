@@ -1,5 +1,5 @@
 import type { ConnectionManager } from '@projectsophon/network';
-import { monomitter, type Monomitter } from '@darkforest_eth/events';
+import { monomitter, type Monomitter } from '@projectsophon/events';
 import type { EthAddress } from '@projectsophon/types';
 import { buildContractCallArgs } from '@projectsophon/snarkjs-helpers';
 import { address } from '@projectsophon/serde';
@@ -16,8 +16,7 @@ import {
   type UnconfirmedClaimTreasure,
 } from '../_types/ContractAPITypes';
 import { SnarkProverQueue } from './SnarkManager';
-import { mimcSponge, modPBigIntNative } from '@darkforest_eth/hashing';
-import BigInt from 'big-integer';
+import { mimcSponge, modPBigIntNative } from '@projectsophon/hashing';
 import initCircuitPath from '@zkgame/snarks/init.wasm?url';
 import initCircuitZkey from '@zkgame/snarks/init.zkey?url';
 import moveCircuitPath from '@zkgame/snarks/move.wasm?url';
@@ -331,8 +330,8 @@ class GameManager extends EventEmitter {
     const possibleHashes = [];
     for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
       const block = await this.ethConnection.provider.getBlock(i);
-      console.log('hash out', block.hash, modPBigIntNative(BigInt(block.hash.slice(2), 16)));
-      possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
+      console.log('hash out', block.hash, modPBigIntNative(BigInt(block.hash)));
+      possibleHashes.push(modPBigIntNative(BigInt(block.hash)));
     }
 
     const possibleHashesHash = mimcSponge(possibleHashes, 1, 22, 123)[0];
@@ -502,7 +501,7 @@ class GameManager extends EventEmitter {
     const powers = await this.contractsAPI.getBattlePower(player);
     const fixedPowers = powers.map((power) => {
       return BigInt(power) > power255()
-        ? -parseInt(power255().shiftLeft(1).subtract(BigInt(power)).toString()) / 1e16
+        ? -parseInt(((power255() << 1n) - BigInt(power)).toString()) / 1e16
         : parseInt(BigInt(power).toString()) / 1e16;
     });
     return fixedPowers;

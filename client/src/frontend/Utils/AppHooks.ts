@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import type GameManager from '../../backend/GameManager';
-import type { Callback, Monomitter } from '@darkforest_eth/events';
+import type { Callback, Monomitter } from '@projectsophon/events';
 import type { CommitmentInfo, Tile } from '../../utils';
 
 /**

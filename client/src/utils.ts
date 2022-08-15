@@ -5,7 +5,7 @@ import { address } from '@projectsophon/serde';
 import BigInt from 'big-integer';
 import type { BigInteger } from 'big-integer';
 
-import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
+import { mimcSponge } from '@darkforest_eth/hashing';
 import tinycolor from 'tinycolor2';
 
 export const MINED_COLOR = '#f27100';

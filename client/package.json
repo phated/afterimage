@@ -13,18 +13,15 @@
     "@zkgame/typechain": "0.0.0",
     "@zkgame/contracts": "0.0.0",
     "@zkgame/snarks": "0.0.0",
-    "@nextui-org/react": "^1.0.2-beta.4",
-    "@rainbow-me/rainbowkit": "^0.4.3",
     "comlink": "^4.3.1",
     "ethers": "^5.6.9",
+    "events": "^3.3.0",
     "process": "^0.11.10",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-router-dom": "^6.3.0",
     "styled-components": "^5.3.5",
-    "tinycolor2": "^1.4.2",
-    "type-fest": "^2.17.0",
-    "wagmi": "^0.5.11"
+    "tinycolor2": "^1.4.2"
   },
   "scripts": {
     "start": "vite"

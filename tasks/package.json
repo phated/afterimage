@@ -7,7 +7,6 @@
     "@types/node-fetch": "^2.6.2",
     "@zkgame/contracts": "0.0.0",
     "@zkgame/typechain": "0.0.0",
-    "@zkgame/network": "0.0.0",
     "camelcase": "^6.3.0",
     "chalk": "^4.1.0",
     "cli-table3": "^0.6.2",

@@ -1,6 +1,6 @@
 import ZKGameContractAbi from '@zkgame/contracts/ZKGame.json';
 import type { ZKGame } from '@zkgame/typechain';
-import { createContract, createEthConnection, EthConnection } from '@zkgame/network';
+import { createContract, ConnectionManager } from '@projectsophon/network';
 import type { providers, Wallet } from 'ethers';
 
 /**
@@ -15,7 +15,7 @@ export async function loadCoreContract(
   return createContract<ZKGame>(address, ZKGameContractAbi, provider, signer);
 }
 
-export function getEthConnection(): Promise<EthConnection> {
+export function getEthConnection(): ConnectionManager {
   const isProd = import.meta.env.MODE === 'production';
   const defaultUrl = import.meta.env.VITE_DEFAULT_RPC;
 
@@ -27,5 +27,5 @@ export function getEthConnection(): Promise<EthConnection> {
     url = 'http://localhost:8545';
   }
 
-  return createEthConnection(url);
+  return new ConnectionManager(url);
 }

@@ -1,5 +1,5 @@
 import { type Monomitter, monomitter } from '@darkforest_eth/events';
-import type { WorldCoords } from '@darkforest_eth/types';
+import type { WorldCoords } from '@projectsophon/types';
 import type GameManager from './GameManager';
 
 type dangerousHTML = {

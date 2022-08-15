@@ -1,6 +1,6 @@
 import FastQueue from 'fastq';
 import * as Comlink from 'comlink';
-import type { SnarkJSProofAndSignals } from '@zkgame/snarks';
+import type { SnarkJSProofAndSignals } from '@projectsophon/snarkjs-helpers';
 
 interface InitSnarkInput {
   x: string;

@@ -1,9 +1,10 @@
-import type { EthConnection } from '@zkgame/network';
+import type { ConnectionManager } from '@projectsophon/network';
 import { monomitter, type Monomitter } from '@darkforest_eth/events';
-import type { EthAddress } from '@darkforest_eth/types';
-import { buildContractCallArgs } from '@zkgame/snarks';
+import type { EthAddress } from '@projectsophon/types';
+import { buildContractCallArgs } from '@projectsophon/snarkjs-helpers';
+import { address } from '@projectsophon/serde';
 import { EventEmitter } from 'events';
-import { ContractsAPI, makeContractsAPI } from './ContractsAPI';
+import { ContractsAPI } from './ContractsAPI';
 import {
   ContractMethodName,
   ContractsAPIEvent,
@@ -34,6 +35,23 @@ import {
   power255,
 } from '../utils';
 import { MinerManager } from './Miner';
+import type { ZKGame } from '@zkgame/typechain';
+import type { TypedEventFilter, TypedListener } from '@zkgame/typechain/common';
+
+export function subscribe<Event extends keyof ZKGame['filters']>(
+  contract: ZKGame,
+  evt: Event,
+  fn: TypedListener<
+    ReturnType<ZKGame['filters'][Event]> extends TypedEventFilter<infer T> ? T : never
+  >
+) {
+  const filter = contract.filters[evt]();
+  contract.on(filter, fn);
+
+  return () => {
+    contract.off(filter, fn);
+  };
+}
 
 class GameManager extends EventEmitter {
   /**
@@ -64,7 +82,7 @@ class GameManager extends EventEmitter {
    * allows us to do basic operations such as wait for a transaction to complete, check the player's
    * address and balance, etc.
    */
-  private readonly ethConnection: EthConnection;
+  private readonly ethConnection: ConnectionManager;
   private readonly snarkProverQueue: SnarkProverQueue;
 
   private selfInfo!: CommitmentInfo;
@@ -86,7 +104,7 @@ class GameManager extends EventEmitter {
 
   private constructor(
     account: EthAddress | undefined,
-    ethConnection: EthConnection,
+    ethConnection: ConnectionManager,
     snarkProverQueue: SnarkProverQueue,
     contractsAPI: ContractsAPI,
     GRID_UPPER_BOUND: number,
@@ -120,21 +138,18 @@ class GameManager extends EventEmitter {
     this.latestEventBlockNum = latestEventBlockNum;
   }
 
-  static async create(ethConnection: EthConnection) {
-    const account = ethConnection.getAddress();
-
-    if (!account) {
+  static async create(ethConnection: ConnectionManager) {
+    if (!ethConnection.account) {
       throw new Error('no account on eth connection');
     }
 
-    const contractsAPI = await makeContractsAPI(ethConnection);
+    const contractsAPI = new ContractsAPI(ethConnection);
     const GRID_UPPER_BOUND = await contractsAPI.getGridUpperBound();
     const SALT_UPPER_BOUND = await contractsAPI.getSaltUpperBound();
-    const provider = ethConnection.getProvider();
-    const latestEventBlockNum = await provider.getBlockNumber();
+    const latestEventBlockNum = await ethConnection.provider.getBlockNumber();
     const snarkProverQueue = new SnarkProverQueue();
     const gameManager = new GameManager(
-      account,
+      ethConnection.account,
       ethConnection,
       snarkProverQueue,
       contractsAPI,
@@ -143,69 +158,65 @@ class GameManager extends EventEmitter {
       latestEventBlockNum
     );
 
-    // important that this happens AFTER we load the game state from the blockchain. Otherwise our
-    // 'loading game state' contract calls will be competing with events from the blockchain that
-    // are happening now, which makes no sense.
-    contractsAPI.setupEventListeners();
+    const contract = await contractsAPI.getContract();
 
     // set up listeners: whenever ContractsAPI reports some game state update,
     // do some logic
     // also, handle state updates for locally-initialized txIntents
-    gameManager.contractsAPI
-      .on(
-        ContractsAPIEvent.PlayerUpdated,
-        async (moverAddr: EthAddress, commitment: BigInt, blockNum: BigInt) => {
-          // todo: update in memory data store
-          // todo: emit event to UI
-          // TODO: do something???
-          console.log('event player', moverAddr, commitment);
+    subscribe(contract, 'PlayerUpdated', async (mover, commitment, blockNum) => {
+      const moverAddr = address(mover);
+      // todo: update in memory data store
+      // todo: emit event to UI
+      // TODO: do something???
+      console.log('event player', moverAddr, commitment);
 
-          const provider = ethConnection.getProvider();
-          gameManager.latestEventBlockNum = await provider.getBlockNumber();
+      gameManager.latestEventBlockNum = await ethConnection.provider.getBlockNumber();
 
-          // reset previous one
-          const prevCommitment = gameManager.addressToLatestCommitment.get(moverAddr);
-          if (prevCommitment) {
-            const oldMetaData = gameManager.commitmentToMetadata.get(prevCommitment)!;
-            oldMetaData.isCurrent = false;
-            gameManager.commitmentToMetadata.set(prevCommitment, oldMetaData);
-          }
+      // reset previous one
+      const prevCommitment = gameManager.addressToLatestCommitment.get(moverAddr);
+      if (prevCommitment) {
+        const oldMetaData = gameManager.commitmentToMetadata.get(prevCommitment)!;
+        oldMetaData.isCurrent = false;
+        gameManager.commitmentToMetadata.set(prevCommitment, oldMetaData);
+      }
 
-          gameManager.addressToLatestCommitment.set(moverAddr, commitment.toString());
-          gameManager.commitmentToMetadata.set(commitment.toString(), {
-            commitment: commitment.toString(),
-            address: moverAddr,
-            blockNum: blockNum.toString(),
-            isCurrent: true,
-          });
+      gameManager.addressToLatestCommitment.set(moverAddr, commitment.toString());
+      gameManager.commitmentToMetadata.set(commitment.toString(), {
+        commitment: commitment.toString(),
+        address: moverAddr,
+        blockNum: blockNum.toString(),
+        isCurrent: true,
+      });
 
-          if (gameManager.commitmentToMinedCommitment.get(commitment.toString())) {
-            const commit = gameManager.commitmentToMinedCommitment.get(commitment.toString())!;
-            gameManager.tiles[commit.x][commit.y].tileType = TileKnowledge.KNOWN;
-            if (gameManager.commitmentToMetadata.get(commit.commitment) !== undefined) {
-              const meta = gameManager.commitmentToMetadata.get(commit.commitment)!;
-              gameManager.tiles[commit.x][commit.y].metas.push(meta);
-            }
-          }
-
-          if (
-            gameManager.optimisticSelfInfo &&
-            gameManager.optimisticSelfInfo.commitment === commitment.toString()
-          ) {
-            gameManager.selfInfo = gameManager.optimisticSelfInfo;
-          }
-
-          if (!gameManager.account) {
-            throw new Error('no account set');
-          }
-          gameManager.playerUpdated$.publish();
+      if (gameManager.commitmentToMinedCommitment.get(commitment.toString())) {
+        const commit = gameManager.commitmentToMinedCommitment.get(commitment.toString())!;
+        gameManager.tiles[commit.x][commit.y].tileType = TileKnowledge.KNOWN;
+        if (gameManager.commitmentToMetadata.get(commit.commitment) !== undefined) {
+          const meta = gameManager.commitmentToMetadata.get(commit.commitment)!;
+          gameManager.tiles[commit.x][commit.y].metas.push(meta);
         }
-      )
-      .on(ContractsAPIEvent.BattleUpdated, async (player1: EthAddress, player2: EthAddress) => {
-        console.log('event battle', player1, player2);
-        gameManager.selfWins = await gameManager.fetchWins();
-        gameManager.battleUpdated$.publish();
-      })
+      }
+
+      if (
+        gameManager.optimisticSelfInfo &&
+        gameManager.optimisticSelfInfo.commitment === commitment.toString()
+      ) {
+        gameManager.selfInfo = gameManager.optimisticSelfInfo;
+      }
+
+      if (!gameManager.account) {
+        throw new Error('no account set');
+      }
+      gameManager.playerUpdated$.publish();
+    });
+
+    subscribe(contract, 'BattleUpdated', async (player1, player2) => {
+      console.log('event battle', player1, player2);
+      gameManager.selfWins = await gameManager.fetchWins();
+      gameManager.battleUpdated$.publish();
+    });
+
+    contractsAPI
       .on(ContractsAPIEvent.TxSubmitted, (unconfirmedTx: SubmittedTx) => {
         // todo: save the tx to localstorage
         gameManager.onTxSubmit(unconfirmedTx);
@@ -241,11 +252,10 @@ class GameManager extends EventEmitter {
   }
 
   public async startMining(x: number, y: number) {
-    const provider = this.ethConnection.getProvider();
-    const latestBlockNumber = await provider.getBlockNumber();
+    const latestBlockNumber = await this.ethConnection.provider.getBlockNumber();
     const possibleHashes = [];
     for (var i = latestBlockNumber - 63; i <= latestBlockNumber; i++) {
-      const block = await provider.getBlock(i);
+      const block = await this.ethConnection.provider.getBlock(i);
       possibleHashes.push(block.hash);
     }
     this.minerManager.startMining(
@@ -317,11 +327,10 @@ class GameManager extends EventEmitter {
   }
 
   private async assembleNewLocationSnarkInput(x: number, y: number) {
-    const provider = this.ethConnection.getProvider();
-    const latestBlockNumber = await provider.getBlockNumber();
+    const latestBlockNumber = await this.ethConnection.provider.getBlockNumber();
     const possibleHashes = [];
     for (var i = latestBlockNumber - 31; i <= latestBlockNumber; i++) {
-      const block = await provider.getBlock(i);
+      const block = await this.ethConnection.provider.getBlock(i);
       console.log('hash out', block.hash, modPBigIntNative(BigInt(block.hash.slice(2), 16)));
       possibleHashes.push(modPBigIntNative(BigInt(block.hash.slice(2), 16)));
     }
@@ -486,8 +495,7 @@ class GameManager extends EventEmitter {
   }
 
   public async getCurrentBlockNumber() {
-    const provider = this.ethConnection.getProvider();
-    return await provider.getBlockNumber();
+    return await this.ethConnection.provider.getBlockNumber();
   }
 
   public async getBattlePower(player: EthAddress) {

@@ -58,8 +58,8 @@ export class ContractsAPI extends EventEmitter {
 
   private contractManager: ContractManager;
 
-  async getContract() {
-    return await this.contractManager.loadContract(CONTRACT_ADDRESS, loadCoreContract);
+  getContract() {
+    return this.contractManager.loadContract(CONTRACT_ADDRESS, loadCoreContract);
   }
 
   constructor(ethConnection: ConnectionManager) {

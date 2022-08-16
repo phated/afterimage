@@ -1,6 +1,5 @@
 import { getCommitment } from '../utils';
-import BigInt from 'big-integer';
-import { modPBigIntNative } from '@darkforest_eth/hashing';
+import { modPBigIntNative } from '@projectsophon/hashing';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ctx: Worker = self as any;
@@ -39,7 +38,7 @@ function startMining(
           const commit = getCommitment(
             realX,
             realY,
-            modPBigIntNative(BigInt(potBlockhash.slice(2), 16)),
+            modPBigIntNative(BigInt(potBlockhash)),
             potSalt
           );
           // console.log(
@@ -50,7 +49,7 @@ function startMining(
           allCommits.push({
             x: realX,
             y: realY,
-            blockhash: modPBigIntNative(BigInt(potBlockhash.slice(2), 16)).toString(),
+            blockhash: modPBigIntNative(BigInt(potBlockhash)).toString(),
             salt: potSalt,
             commitment: commit.toString(),
           });

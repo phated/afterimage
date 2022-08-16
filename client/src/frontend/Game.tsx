@@ -11,7 +11,6 @@ import {
   TREASURE_COLOR,
   isTreasure,
 } from '../utils';
-import { Text, Loading } from '@nextui-org/react';
 import type { ConnectionManager } from '@projectsophon/network';
 import type { EthAddress } from '@projectsophon/types';
 import { getEthConnection } from '../backend/Blockchain';
@@ -313,19 +312,12 @@ export default function Game() {
       ) : (
         <FullScreen>
           <Title>
-            <Text h1 size={96} color='secondary'>
-              defcon procgen workshop
-            </Text>
+            <h1 style={{ fontSize: '96px', color: '#9750DD' }}>defcon procgen workshop</h1>
           </Title>
           <SubTitle>
-            <Text h2 size={64} color='secondary'>
-              Loading
-              <Loading type='points-opacity' size='lg' color='secondary' />
-            </Text>
+            <h2 style={{ fontSize: '64px', color: '#9750DD' }}>Loading...</h2>
             {error != 'no errors' && (
-              <Text h2 size={64} color='secondary'>
-                {error}
-              </Text>
+              <h2 style={{ fontSize: '64px', color: '#9750DD' }}>{error}</h2>
             )}
           </SubTitle>
         </FullScreen>

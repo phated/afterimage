@@ -1,12 +1,35 @@
-import { useCallback, useState } from 'react';
-import { Wrapper } from '../../backend/Utils/Wrapper';
+import { useCallback, useState, useEffect } from 'react';
 import type GameManager from '../../backend/GameManager';
-import { useEmitterSubscribe } from './EmitterHooks';
-import { createDefinedContext } from './createDefinedContext';
+import type { Callback, Monomitter } from '@projectsophon/events';
 import type { CommitmentInfo, Tile } from '../../utils';
 
-export const { useDefinedContext: useGameManager, provider: GameManagerProvider } =
-  createDefinedContext<GameManager>();
+/**
+ * React uses referential identity to detect changes, and rerender. Rather
+ * than copying an object into a new object, to force a rerender, we can
+ * just wrap it in a new {@code Wrapper}, which will force a rerender.
+ */
+class Wrapper<T> {
+  public readonly value: T;
+
+  public constructor(value: T) {
+    this.value = value;
+  }
+
+  public or(wrapper: Wrapper<T>) {
+    return new Wrapper(this.value || wrapper.value);
+  }
+}
+
+/**
+ * Execute something on emitter callback
+ * @param emitter `Monomitter` to subscribe to
+ * @param callback callback to subscribe
+ */
+function useEmitterSubscribe<T>(emitter: Monomitter<T> | undefined, callback: Callback<T>) {
+  useEffect(() => {
+    return emitter?.subscribe(callback).unsubscribe;
+  }, [emitter, callback]);
+}
 
 export function useTiles(gameManager: GameManager | undefined): Wrapper<Tile[][]> {
   const [tiles, setTiles] = useState<Wrapper<Tile[][]>>(
@@ -55,83 +78,3 @@ export function useMyWins(gameManager: GameManager | undefined): Wrapper<number>
 
   return myWins;
 }
-
-// /**
-//  * Hook which gets you the tiles
-//  */
-// export function useTiles(gameManager: GameManager | undefined): Wrapper<Tile[][]> {
-//   const [tiles, setTiles] = useState<Wrapper<Tile[][]>>(
-//     () => new Wrapper(gameManager ? gameManager.getTiles() : [])
-//   );
-
-//   const onUpdate = useCallback(() => {
-//     console.log('onUpdate');
-//     setTiles(new Wrapper(gameManager ? gameManager.getTiles() : []));
-//   }, [gameManager]);
-
-//   useEmitterSubscribe(gameManager?.tileUpdated$, onUpdate);
-
-//   return tiles;
-// }
-
-// export function useInfo(
-//   gameManager: GameManager | undefined
-// ): Wrapper<Map<EthAddress, PlayerInfo>> {
-//   const [playerInfos, setPlayerInfos] = useState<Wrapper<Map<EthAddress, PlayerInfo>>>(
-//     () => new Wrapper(new Map())
-//   );
-
-//   const onUpdate = useCallback(async () => {
-//     console.log('onUpdate useLocation');
-//     const newInfos = gameManager ? await gameManager.getPlayerInfos() : new Map();
-//     console.log('useLocation infos', newInfos);
-//     setPlayerInfos(new Wrapper(newInfos));
-//   }, [gameManager]);
-
-//   useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
-
-//   return playerInfos;
-// }
-
-// export function useInitted(gameManager: GameManager | undefined): Wrapper<boolean> {
-//   const [initted, setinitted] = useState<Wrapper<boolean>>(() => new Wrapper(false));
-
-//   const onUpdate = useCallback(async () => {
-//     const newInitted = gameManager ? await gameManager.getInitted() : false;
-//     setinitted(new Wrapper(newInitted));
-//   }, [gameManager]);
-
-//   useEmitterSubscribe(gameManager?.playerUpdated$, onUpdate);
-
-//   return initted;
-// }
-
-// export function useTileTxStatus(gameManager: GameManager | undefined): {
-//   submitted: Wrapper<string[]>;
-//   confirmed: Wrapper<string[]>;
-//   reverted: Wrapper<string[]>;
-// } {
-//   const [submittedTileTx, setSubmittedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
-//   const [confirmedTileTx, setConfirmedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
-//   const [revertedTileTx, setRevertedTileTx] = useState<Wrapper<string[]>>(() => new Wrapper([]));
-
-//   const onUpdate = useCallback(async ([tx, status]) => {
-//     if (status == 'submitted') {
-//       setSubmittedTileTx(new Wrapper([...submittedTileTx.value, tx.actionId]));
-//     }
-//     if (status == 'confirmed') {
-//       setConfirmedTileTx(new Wrapper([...confirmedTileTx.value, tx.actionId]));
-//     }
-//     if (status == 'reverted') {
-//       setRevertedTileTx(new Wrapper([...revertedTileTx.value, tx.actionId]));
-//     }
-//   }, []);
-
-//   useEmitterSubscribe(gameManager?.tileTxUpdated$, onUpdate);
-
-//   return {
-//     submitted: submittedTileTx,
-//     confirmed: confirmedTileTx,
-//     reverted: revertedTileTx,
-//   };
-// }

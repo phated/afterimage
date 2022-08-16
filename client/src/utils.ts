@@ -2,10 +2,8 @@ import { ethers } from 'ethers';
 import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import type { EthAddress } from '@projectsophon/types';
 import { address } from '@projectsophon/serde';
-import BigInt from 'big-integer';
-import type { BigInteger } from 'big-integer';
 
-import { mimcSponge, modPBigInt } from '@darkforest_eth/hashing';
+import { mimcSponge } from '@projectsophon/hashing';
 import tinycolor from 'tinycolor2';
 
 export const MINED_COLOR = '#f27100';
@@ -127,7 +125,7 @@ export type PlayerInfo = {
   canPutAnything: boolean;
 };
 
-export function getCommitment(x: number, y: number, blockhash: BigInteger, salt: number) {
+export function getCommitment(x: number, y: number, blockhash: bigint, salt: number) {
   return mimcSponge([BigInt(x), BigInt(y), blockhash, BigInt(salt)], 1, 220, 123)[0];
 }
 
@@ -155,13 +153,9 @@ export type CommitmentMetadata = {
 };
 
 export function power255() {
-  return BigInt(1).shiftLeft(255);
+  return 1n << 255n;
 }
 
 export function isTreasure(coords: WorldCoords) {
-  return (
-    mimcSponge([BigInt(coords.x), BigInt(coords.y)], 1, 220, 123)[0]
-      .mod(BigInt(13))
-      .toJSNumber() == 0
-  );
+  return mimcSponge([BigInt(coords.x), BigInt(coords.y)], 1, 220, 123)[0] % 13n === 0n;
 }

@@ -12,5 +12,8 @@
   "rewrap.autoWrap.enabled": true,
   "[solidity]": {
     "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
   }
 }

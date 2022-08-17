@@ -1,6 +1,6 @@
 import type { ConnectionManager } from '@projectsophon/network';
 import { monomitter, type Monomitter } from '@projectsophon/events';
-import type { EthAddress } from '@projectsophon/types';
+import type { EthAddress, WorldCoords } from '@projectsophon/types';
 import { buildContractCallArgs } from '@projectsophon/snarkjs-helpers';
 import { address } from '@projectsophon/serde';
 import { EventEmitter } from 'events';
@@ -250,7 +250,11 @@ class GameManager extends EventEmitter {
     this.minedTilesUpdated$.publish();
   }
 
-  public async startMining(x: number, y: number) {
+  public async startMining(worldLoc?: WorldCoords) {
+    if (!worldLoc) {
+      console.warn('no location to mine');
+      return;
+    }
     const latestBlockNumber = await this.ethConnection.provider.getBlockNumber();
     const possibleHashes = [];
     for (var i = latestBlockNumber - 63; i <= latestBlockNumber; i++) {
@@ -260,8 +264,8 @@ class GameManager extends EventEmitter {
     this.minerManager.startMining(
       this.GRID_UPPER_BOUND,
       this.SALT_UPPER_BOUND,
-      x,
-      y,
+      worldLoc.x,
+      worldLoc.y,
       possibleHashes,
       this.processMine.bind(this)
     );
@@ -540,7 +544,11 @@ class GameManager extends EventEmitter {
     return callArgs;
   }
 
-  public async battlePlayer(player: EthAddress) {
+  public async battlePlayer(player?: EthAddress) {
+    if (!player) {
+      console.warn('no player to battle');
+      return;
+    }
     const actionId = getRandomActionId();
     const txIntent: UnconfirmedBattlePlayer = {
       actionId,

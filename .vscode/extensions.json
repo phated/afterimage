@@ -3,8 +3,8 @@
     "nomicfoundation.hardhat-solidity",
     "esbenp.prettier-vscode",
     "hbenl.vscode-mocha-test-adapter",
-    "styled-components.vscode-styled-components",
     "iden3.circom",
-    "bungcip.better-toml"
+    "bungcip.better-toml",
+    "svelte.svelte-vscode"
   ]
 }

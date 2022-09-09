@@ -18,9 +18,7 @@
     "events": "^3.3.0",
     "tinycolor2": "^1.4.2"
   },
-  "scripts": {
-    "start": "vite"
-  },
+  "scripts": {},
   "browserslist": {
     "production": [
       "last 1 chrome version",

@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "prepare": "workspaces-to-typescript-project-references --tsconfigPath tsconfig.ref.json",
-    "start": "hardhat node --hostname 0.0.0.0",
+    "start": "hardhat node",
     "compile": "hardhat compile",
     "circom:dev": "hardhat circom --debug --verbose",
     "circom:prod": "hardhat circom --verbose",

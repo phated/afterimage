@@ -60,7 +60,6 @@ const config: HardhatUserConfig = {
    */
   networks: {
     localhost: {
-      url: 'http://localhost:8545/',
       accounts: {
         mnemonic: 'change typical hire slam amateur loan grid fix drama electric seed label',
       },

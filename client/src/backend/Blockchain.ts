@@ -16,16 +16,5 @@ export async function loadCoreContract(
 }
 
 export function getEthConnection(): ConnectionManager {
-  const isProd = import.meta.env.MODE === 'production';
-  const defaultUrl = import.meta.env.VITE_DEFAULT_RPC;
-
-  let url: string;
-
-  if (isProd) {
-    url = defaultUrl;
-  } else {
-    url = 'http://localhost:8545';
-  }
-
-  return new ConnectionManager(url);
+  return new ConnectionManager(import.meta.env.RPC_URL);
 }

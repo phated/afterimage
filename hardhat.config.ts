@@ -10,6 +10,7 @@ import '@typechain/hardhat';
 import 'hardhat-circom';
 import 'hardhat-contract-sizer';
 import 'hardhat-settings';
+import 'hardhat-vite';
 import '@solidstate/hardhat-4byte-uploader';
 
 // Our Hardhat tasks
@@ -21,6 +22,8 @@ import 'hardhat-tasks/circom';
 import type { HardhatRuntimeEnvironment, HardhatUserConfig } from 'hardhat/types';
 import { extendEnvironment } from 'hardhat/config';
 import * as diamondUtils from 'hardhat-tasks/utils/diamond';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import sveltePreprocess from 'svelte-preprocess';
 
 //@ts-ignore because they don't provide types
 import * as mapWorkspaces from '@npmcli/map-workspaces';
@@ -207,6 +210,17 @@ const config: HardhatUserConfig = {
     zkgame: {
       lazy: false,
     },
+  },
+  vite: {
+    root: packages.get('client'),
+    envFile: false,
+    plugins: [
+      svelte({
+        // Consult https://github.com/sveltejs/svelte-preprocess for details about preprocessors
+        preprocess: sveltePreprocess(),
+      }),
+    ],
+    assetsInclude: ['**/*.zkey'],
   },
 };
 

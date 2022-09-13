@@ -19,16 +19,6 @@
     "tinycolor2": "^1.4.2"
   },
   "scripts": {},
-  "browserslist": {
-    "production": [
-      "last 1 chrome version",
-      "last 1 firefox version"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version"
-    ]
-  },
   "engines": {
     "node": "^16"
   },
